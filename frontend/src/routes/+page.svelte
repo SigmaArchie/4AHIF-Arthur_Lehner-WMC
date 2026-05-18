@@ -1,2 +1,3 @@
-<h1>Welcome to SvelteKit</h1>
-<p>Visit <a href="https://svelte.dev/docs/kit">svelte.dev/docs/kit</a> to read the documentation</p>
+<h1 class="text-5xl font-bold mb-4">Card Clash</h1>
+
+<p>Multiplayer UNO-inspired card game built with SvelteKit.</p>
