@@ -2,37 +2,20 @@ require('dotenv').config();
 
 const express = require('express');
 const cors = require('cors');
-const http = require('http');
-const { Server } = require('socket.io');
+const bcrypt = require('bcrypt');
 
 const initDatabase = require('./db');
 
 const app = express();
 
-app.use(cors());
+app.use(cors({ origin: 'http://localhost:5000' }));
 app.use(express.json());
-
-const server = http.createServer(app);
-
-const io = new Server(server, {
-  cors: {
-    origin: 'http://localhost:5000'
-  }
-});
 
 let db;
 
 (async () => {
   db = await initDatabase();
 })();
-
-io.on('connection', (socket) => {
-  console.log('User connected:', socket.id);
-
-  socket.on('disconnect', () => {
-    console.log('User disconnected');
-  });
-});
 
 app.get('/', (req, res) => {
   res.send('Backend is running');
@@ -42,27 +25,46 @@ app.post('/register', async (req, res) => {
   const { username, password } = req.body;
 
   if (!username || !password) {
-    return res.status(400).json({
-      error: 'Username and password required'
-    });
+    return res.status(400).json({ error: 'Username and password required' });
   }
 
   try {
-    await db.run(
-      'INSERT INTO users (username, password) VALUES (?, ?)',
-      [username, password]
-    );
+    const hashed = await bcrypt.hash(password, 10);
 
-    res.json({
-      message: 'User created'
-    });
+    await db.run('INSERT INTO users (username, password) VALUES (?, ?)', [
+      username,
+      hashed
+    ]);
+
+    res.json({ message: 'User created' });
   } catch (error) {
-    res.status(500).json({
-      error: 'User already exists'
-    });
+    res.status(500).json({ error: 'User already exists' });
   }
 });
 
-server.listen(3000, () => {
-  console.log('Server running on port 3000');
+app.post('/login', async (req, res) => {
+  const { username, password } = req.body;
+
+  if (!username || !password) {
+    return res.status(400).json({ error: 'Username and password required' });
+  }
+
+  try {
+    const user = await db.get('SELECT * FROM users WHERE username = ?', [username]);
+
+    if (!user) return res.status(401).json({ error: 'Invalid credentials' });
+
+    const match = await bcrypt.compare(password, user.password);
+
+    if (!match) return res.status(401).json({ error: 'Invalid credentials' });
+
+    res.json({ message: 'Login successful' });
+  } catch (error) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });
