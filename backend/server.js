@@ -5,6 +5,8 @@ const cors = require('cors');
 const http = require('http');
 const { Server } = require('socket.io');
 
+const initDatabase = require('./db');
+
 const app = express();
 
 app.use(cors());
@@ -18,6 +20,12 @@ const io = new Server(server, {
   }
 });
 
+let db;
+
+(async () => {
+  db = await initDatabase();
+})();
+
 io.on('connection', (socket) => {
   console.log('User connected:', socket.id);
 
@@ -28,6 +36,31 @@ io.on('connection', (socket) => {
 
 app.get('/', (req, res) => {
   res.send('Backend is running');
+});
+
+app.post('/register', async (req, res) => {
+  const { username, password } = req.body;
+
+  if (!username || !password) {
+    return res.status(400).json({
+      error: 'Username and password required'
+    });
+  }
+
+  try {
+    await db.run(
+      'INSERT INTO users (username, password) VALUES (?, ?)',
+      [username, password]
+    );
+
+    res.json({
+      message: 'User created'
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: 'User already exists'
+    });
+  }
 });
 
 server.listen(3000, () => {
