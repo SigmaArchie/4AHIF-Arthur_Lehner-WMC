@@ -17,6 +17,7 @@
 	<a href="/lobby">Lobby</a>
 	<a href="/game">Game</a>
 	<a href="/stats">Stats</a>
+	<a href="/server-status">Server Status</a>
 </nav>
 
 <div class="p-6">
