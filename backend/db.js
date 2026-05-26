@@ -13,7 +13,15 @@ async function initDatabase() {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       username TEXT NOT NULL UNIQUE,
       password TEXT NOT NULL
-    )
+    );
+
+    CREATE TABLE IF NOT EXISTS rooms (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      max_players INTEGER NOT NULL DEFAULT 4,
+      status TEXT NOT NULL DEFAULT 'waiting',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
   `);
 
   console.log('Database connected');
