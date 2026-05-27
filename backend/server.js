@@ -3,10 +3,16 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const bcrypt = require('bcrypt');
+const { createServer } = require('http');
+const { Server } = require('socket.io');
 
 const initDatabase = require('./db');
 
 const app = express();
+const httpServer = createServer(app);
+const io = new Server(httpServer, {
+  cors: { origin: 'http://localhost:5000' }
+});
 
 app.use(cors({ origin: 'http://localhost:5000' }));
 app.use(express.json());
@@ -86,13 +92,33 @@ app.post('/rooms', async (req, res) => {
       [name, max_players || 4]
     );
     const room = await db.get('SELECT * FROM rooms WHERE id = ?', [result.lastID]);
+
+    const rooms = await db.all("SELECT * FROM rooms WHERE status = 'waiting'");
+    io.emit('rooms-updated', rooms);
+
     res.json(room);
   } catch (error) {
     res.status(500).json({ error: 'Server error' });
   }
 });
 
+io.on('connection', (socket) => {
+  console.log('Client connected:', socket.id);
+
+  socket.on('join-room', async ({ roomId, username }) => {
+    socket.join(`room-${roomId}`);
+    console.log(`${username} joined room ${roomId}`);
+
+    const rooms = await db.all("SELECT * FROM rooms WHERE status = 'waiting'");
+    io.emit('rooms-updated', rooms);
+  });
+
+  socket.on('disconnect', () => {
+    console.log('Client disconnected:', socket.id);
+  });
+});
+
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
+httpServer.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
