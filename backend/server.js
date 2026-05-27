@@ -64,6 +64,34 @@ app.post('/login', async (req, res) => {
   }
 });
 
+app.get('/rooms', async (req, res) => {
+  try {
+    const rooms = await db.all("SELECT * FROM rooms WHERE status = 'waiting'");
+    res.json(rooms);
+  } catch (error) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+app.post('/rooms', async (req, res) => {
+  const { name, max_players } = req.body;
+
+  if (!name) {
+    return res.status(400).json({ error: 'Room name required' });
+  }
+
+  try {
+    const result = await db.run(
+      'INSERT INTO rooms (name, max_players) VALUES (?, ?)',
+      [name, max_players || 4]
+    );
+    const room = await db.get('SELECT * FROM rooms WHERE id = ?', [result.lastID]);
+    res.json(room);
+  } catch (error) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
