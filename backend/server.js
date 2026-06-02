@@ -7,6 +7,7 @@ const { createServer } = require('http');
 const { Server } = require('socket.io');
 
 const initDatabase = require('./db');
+const { createGame, applyPlayCard, applyDrawCard, getStateForPlayer } = require('./game');
 
 const app = express();
 const httpServer = createServer(app);
@@ -22,6 +23,9 @@ let db;
 (async () => {
   db = await initDatabase();
 })();
+
+// in-memory game states: roomId -> gameState
+const games = {};
 
 app.get('/', (req, res) => {
   res.send('Backend is running');
@@ -107,16 +111,83 @@ io.on('connection', (socket) => {
 
   socket.on('join-room', async ({ roomId, username }) => {
     socket.join(`room-${roomId}`);
+    socket.data.username = username;
+    socket.data.roomId = roomId;
     console.log(`${username} joined room ${roomId}`);
 
     const rooms = await db.all("SELECT * FROM rooms WHERE status = 'waiting'");
     io.emit('rooms-updated', rooms);
   });
 
+  socket.on('start-game', async ({ roomId }) => {
+    // collect all usernames in this socket.io room
+    const socketsInRoom = await io.in(`room-${roomId}`).fetchSockets();
+    const players = socketsInRoom.map(s => s.data.username).filter(Boolean);
+
+    if (players.length < 2) {
+      socket.emit('error', 'Need at least 2 players to start');
+      return;
+    }
+
+    games[roomId] = createGame(players);
+
+    await db.run("UPDATE rooms SET status = 'running' WHERE id = ?", [roomId]);
+    const rooms = await db.all("SELECT * FROM rooms WHERE status = 'waiting'");
+    io.emit('rooms-updated', rooms);
+
+    // send each player their personal game view
+    for (const s of socketsInRoom) {
+      const username = s.data.username;
+      s.emit('game-started', { roomId });
+      s.emit('game-state', getStateForPlayer(games[roomId], username));
+    }
+  });
+
+  socket.on('play-card', ({ roomId, cardIndex, chosenColor }) => {
+    const username = socket.data.username;
+    const game = games[roomId];
+    if (!game) return;
+
+    const result = applyPlayCard(game, username, cardIndex, chosenColor);
+    if (!result.ok) {
+      socket.emit('error', result.error);
+      return;
+    }
+
+    broadcastGameState(roomId);
+  });
+
+  socket.on('draw-card', ({ roomId }) => {
+    const username = socket.data.username;
+    const game = games[roomId];
+    if (!game) return;
+
+    const result = applyDrawCard(game, username);
+    if (!result.ok) {
+      socket.emit('error', result.error);
+      return;
+    }
+
+    broadcastGameState(roomId);
+  });
+
   socket.on('disconnect', () => {
     console.log('Client disconnected:', socket.id);
   });
 });
+
+async function broadcastGameState(roomId) {
+  const game = games[roomId];
+  if (!game) return;
+
+  const socketsInRoom = await io.in(`room-${roomId}`).fetchSockets();
+  for (const s of socketsInRoom) {
+    const username = s.data.username;
+    if (username) {
+      s.emit('game-state', getStateForPlayer(game, username));
+    }
+  }
+}
 
 const PORT = process.env.PORT || 3000;
 httpServer.listen(PORT, () => {
