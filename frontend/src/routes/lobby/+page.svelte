@@ -1,5 +1,6 @@
 <script>
   import { onMount, onDestroy } from 'svelte';
+  import { goto } from '$app/navigation';
   import { auth } from '$lib/auth.svelte.js';
   import { socket } from '$lib/socket.svelte.js';
 
@@ -7,6 +8,7 @@
   let roomName = $state('');
   let maxPlayers = $state(4);
   let message = $state('');
+  let joinedRoomId = $state(null);
 
   async function loadRooms() {
     const response = await fetch('http://localhost:3000/rooms');
@@ -23,9 +25,11 @@
     });
 
     if (response.ok) {
+      const room = await response.json();
       roomName = '';
       maxPlayers = 4;
       message = '';
+      joinRoom(room.id);
     } else {
       const data = await response.json();
       message = data.error;
@@ -38,17 +42,29 @@
       return;
     }
     socket.emit('join-room', { roomId, username: auth.username });
+    joinedRoomId = roomId;
+  }
+
+  function startGame() {
+    if (!joinedRoomId) return;
+    socket.emit('start-game', { roomId: joinedRoomId });
   }
 
   onMount(() => {
     loadRooms();
+
     socket.on('rooms-updated', (updatedRooms) => {
       rooms = updatedRooms;
+    });
+
+    socket.on('game-started', ({ roomId }) => {
+      goto(`/game?room=${roomId}`);
     });
   });
 
   onDestroy(() => {
     socket.off('rooms-updated');
+    socket.off('game-started');
   });
 </script>
 
@@ -74,7 +90,7 @@
           </thead>
           <tbody>
             {#each rooms as room}
-              <tr class="hover:bg-gray-50">
+              <tr class="hover:bg-gray-50 {joinedRoomId === room.id ? 'bg-blue-50' : ''}">
                 <td class="border border-gray-300 p-2">{room.name}</td>
                 <td class="border border-gray-300 p-2">0 / {room.max_players}</td>
                 <td class="border border-gray-300 p-2">
@@ -83,17 +99,34 @@
                   </span>
                 </td>
                 <td class="border border-gray-300 p-2">
-                  <button
-                    onclick={() => joinRoom(room.id)}
-                    class="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 text-sm"
-                  >
-                    Beitreten
-                  </button>
+                  {#if joinedRoomId === room.id}
+                    <span class="text-blue-600 text-sm font-semibold">✓ Beigetreten</span>
+                  {:else}
+                    <button
+                      onclick={() => joinRoom(room.id)}
+                      class="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 text-sm"
+                    >
+                      Beitreten
+                    </button>
+                  {/if}
                 </td>
               </tr>
             {/each}
           </tbody>
         </table>
+      {/if}
+
+      <!-- Spiel starten Button -->
+      {#if joinedRoomId}
+        <div class="mt-4">
+          <button
+            onclick={startGame}
+            class="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700 font-semibold"
+          >
+            Spiel starten
+          </button>
+          <p class="text-sm text-gray-500 mt-1">Alle Spieler im Raum werden gestartet.</p>
+        </div>
       {/if}
     </div>
 
@@ -121,7 +154,7 @@
           onclick={createRoom}
           class="bg-purple-600 text-white p-2 rounded hover:bg-purple-700 text-sm"
         >
-          Erstellen
+          Erstellen & Beitreten
         </button>
 
         {#if message}
