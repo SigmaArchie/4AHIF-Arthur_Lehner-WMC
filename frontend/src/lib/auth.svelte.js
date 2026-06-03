@@ -10,4 +10,5 @@ export function login(username) {
 export function logout() {
   auth.username = null;
   localStorage.removeItem('username');
+  localStorage.removeItem('currentRoomId');
 }

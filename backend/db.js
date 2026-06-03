@@ -20,12 +20,19 @@ async function initDatabase() {
       name TEXT NOT NULL,
       max_players INTEGER NOT NULL DEFAULT 4,
       status TEXT NOT NULL DEFAULT 'waiting',
+      owner TEXT NOT NULL DEFAULT '',
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
   `);
 
-  console.log('Database connected');
+  // add owner column to existing databases that don't have it yet
+  try {
+    await db.run("ALTER TABLE rooms ADD COLUMN owner TEXT NOT NULL DEFAULT ''");
+  } catch {
+    // column already exists
+  }
 
+  console.log('Database connected');
   return db;
 }
 

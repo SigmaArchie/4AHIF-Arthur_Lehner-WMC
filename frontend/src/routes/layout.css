@@ -1,2 +1,204 @@
 @import 'tailwindcss';
 @plugin '@tailwindcss/forms';
+
+:root {
+  --bg: #f8f9fa;
+  --surface: #ffffff;
+  --surface2: #f1f3f5;
+  --border: #dee2e6;
+  --border-strong: #adb5bd;
+  --primary: #2563eb;
+  --primary-hover: #1d4ed8;
+  --primary-light: #eff6ff;
+  --danger: #dc2626;
+  --danger-hover: #b91c1c;
+  --success: #16a34a;
+  --text: #111827;
+  --text-muted: #6b7280;
+  --text-light: #9ca3af;
+  --radius: 10px;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow: 0 4px 6px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.05);
+  --shadow-lg: 0 10px 15px rgba(0,0,0,0.08), 0 4px 6px rgba(0,0,0,0.04);
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  margin: 0;
+}
+
+a { color: inherit; text-decoration: none; }
+
+/* ── buttons ──────────────────────────────────────────── */
+.btn-primary {
+  background: var(--primary);
+  color: white;
+  border: none;
+  padding: 0.5rem 1.25rem;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: background 0.15s, transform 0.1s;
+  box-shadow: var(--shadow-sm);
+  white-space: nowrap;
+}
+.btn-primary:hover { background: var(--primary-hover); transform: translateY(-1px); }
+.btn-primary:active { transform: translateY(0); }
+
+.btn-secondary {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  padding: 0.5rem 1.25rem;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: background 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+.btn-secondary:hover { background: var(--surface2); border-color: var(--border-strong); }
+
+.btn-danger {
+  background: white;
+  color: var(--danger);
+  border: 1px solid var(--danger);
+  padding: 0.4rem 1rem;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 500;
+  transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+.btn-danger:hover { background: var(--danger); color: white; }
+
+/* ── surface card ─────────────────────────────────────── */
+.surface-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  box-shadow: var(--shadow-sm);
+}
+
+/* ── inputs ───────────────────────────────────────────── */
+input, select {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 8px;
+  padding: 0.6rem 0.875rem;
+  width: 100%;
+  font-size: 0.95rem;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+input:focus, select:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(37,99,235,0.12);
+}
+input::placeholder { color: var(--text-light); }
+
+/* ── modals ───────────────────────────────────────────── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+.modal {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 2rem;
+  min-width: 320px;
+  box-shadow: var(--shadow-lg);
+  text-align: center;
+}
+
+/* ── game cards ───────────────────────────────────────── */
+.game-card {
+  width: 72px;
+  height: 108px;
+  border-radius: 10px;
+  border: 3px solid rgba(255,255,255,0.45);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px;
+  cursor: pointer;
+  position: relative;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.3);
+  transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+  user-select: none;
+  font-weight: 800;
+  color: white;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.4);
+  flex-shrink: 0;
+}
+.game-card:hover:not(.disabled):not(:disabled) {
+  transform: translateY(-12px) rotate(-1deg);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.25);
+  border-color: rgba(255,255,255,0.85);
+  z-index: 10;
+}
+.game-card.disabled, .game-card:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  filter: grayscale(20%);
+  transform: none !important;
+}
+.card-corner-top  { font-size: 0.8rem; align-self: flex-start; line-height: 1; }
+.card-corner-bottom { font-size: 0.8rem; align-self: flex-end; transform: rotate(180deg); line-height: 1; }
+.card-center {
+  font-size: 1.5rem;
+  font-weight: 900;
+  background: rgba(255,255,255,0.22);
+  border-radius: 50%;
+  width: 42px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid rgba(255,255,255,0.45);
+}
+
+.card-red    { background: linear-gradient(145deg, #ef4444, #b91c1c); }
+.card-blue   { background: linear-gradient(145deg, #3b82f6, #1d4ed8); }
+.card-green  { background: linear-gradient(145deg, #22c55e, #15803d); }
+.card-yellow { background: linear-gradient(145deg, #f59e0b, #b45309); color: #1a1a1a; text-shadow: none; }
+.card-wild   { background: linear-gradient(145deg, #8b5cf6, #4c1d95); }
+
+.card-back {
+  background: linear-gradient(145deg, #1e40af, #1e3a8a);
+  border: 3px solid rgba(255,255,255,0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  font-weight: 900;
+  color: rgba(255,255,255,0.75);
+  letter-spacing: 1px;
+}
+
+/* ── mini cards (opponent hand) ───────────────────────── */
+.mini-card {
+  width: 26px;
+  height: 40px;
+  border-radius: 4px;
+  background: linear-gradient(145deg, #1e40af, #1e3a8a);
+  border: 2px solid rgba(255,255,255,0.3);
+  flex-shrink: 0;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+}

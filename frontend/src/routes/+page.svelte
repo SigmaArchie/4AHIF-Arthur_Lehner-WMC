@@ -1,3 +1,10 @@
-<h1 class="text-5xl font-bold mb-4">Card Clash</h1>
+<script>
+  import { onMount } from 'svelte';
+  import { goto } from '$app/navigation';
+  import { auth } from '$lib/auth.svelte.js';
 
-<p>Multiplayer UNO-inspired card game built with SvelteKit.</p>
+  onMount(() => {
+    if (auth.username) goto('/lobby');
+    else goto('/login');
+  });
+</script>

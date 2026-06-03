@@ -1,6 +1,15 @@
 # Card Clash
 
-Bei diesem Projekt handelt es sich um ein Multiplayer-Kartenspiel inspiriert von Uno. Spieler
-können sich registrieren, Spielräume erstellen oder bestehenden Räumen beitreten und
-anschließend ganz einfach in Echtzeit gegeneinander spielen.
-Das Projekt wird mit Svelte 5 im Frontend und Express.js im Backend umgesetzt
+Multiplayer-Kartenspiel inspiriert von UNO.
+
+## Setup
+
+```bash
+# Backend
+cd backend && npm install && npm run dev
+# → http://localhost:3000
+
+# Frontend (neues Terminal)
+cd frontend && npm install && npm run dev
+# → http://localhost:5000
+```

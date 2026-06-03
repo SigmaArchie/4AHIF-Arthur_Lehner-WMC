@@ -1,3 +1,12 @@
 import { io } from 'socket.io-client';
 
-export const socket = io('http://localhost:3000');
+let _socket = null;
+
+export function connectSocket() {
+  if (!_socket) _socket = io('http://localhost:3000');
+  return _socket;
+}
+
+export function getSocket() {
+  return _socket;
+}

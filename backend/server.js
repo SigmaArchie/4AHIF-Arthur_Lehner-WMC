@@ -2,7 +2,6 @@ require('dotenv').config();
 
 const express = require('express');
 const cors = require('cors');
-const bcrypt = require('bcrypt');
 const { createServer } = require('http');
 const { Server } = require('socket.io');
 
@@ -20,176 +19,161 @@ app.use(express.json());
 
 let db;
 
-(async () => {
-  db = await initDatabase();
-})();
-
 // in-memory game states: roomId -> gameState
 const games = {};
+// in-memory player tracking: roomId -> Set of usernames
+const roomPlayers = {};
 
-app.get('/', (req, res) => {
-  res.send('Backend is running');
-});
+(async () => {
+  db = await initDatabase();
+  await db.run("DELETE FROM rooms WHERE status = 'running'");
 
-app.post('/register', async (req, res) => {
-  const { username, password } = req.body;
+  app.get('/', (req, res) => res.send('Backend is running'));
+  app.use('/', require('./routes/auth')(db));
+  app.use('/', require('./routes/rooms')(db, io));
+})();
 
-  if (!username || !password) {
-    return res.status(400).json({ error: 'Username and password required' });
+// ── helpers ────────────────────────────────────────────────────────────────
+
+async function emitRoomsUpdate() {
+  const rooms = await db.all("SELECT * FROM rooms WHERE status = 'waiting'");
+  const roomsWithCounts = await Promise.all(
+    rooms.map(async (room) => {
+      const sockets = await io.in(`room-${room.id}`).fetchSockets();
+      return { ...room, player_count: sockets.length };
+    })
+  );
+  io.emit('rooms-updated', roomsWithCounts);
+}
+
+async function broadcastGameState(roomId) {
+  const game = games[roomId];
+  if (!game) return;
+  const socketsInRoom = await io.in(`room-${roomId}`).fetchSockets();
+  for (const s of socketsInRoom) {
+    if (s.data.username) {
+      s.emit('game-state', getStateForPlayer(game, s.data.username));
+    }
   }
+}
 
-  try {
-    const hashed = await bcrypt.hash(password, 10);
-
-    await db.run('INSERT INTO users (username, password) VALUES (?, ?)', [
-      username,
-      hashed
-    ]);
-
-    res.json({ message: 'User created' });
-  } catch (error) {
-    res.status(500).json({ error: 'User already exists' });
-  }
-});
-
-app.post('/login', async (req, res) => {
-  const { username, password } = req.body;
-
-  if (!username || !password) {
-    return res.status(400).json({ error: 'Username and password required' });
-  }
-
-  try {
-    const user = await db.get('SELECT * FROM users WHERE username = ?', [username]);
-
-    if (!user) return res.status(401).json({ error: 'Invalid credentials' });
-
-    const match = await bcrypt.compare(password, user.password);
-
-    if (!match) return res.status(401).json({ error: 'Invalid credentials' });
-
-    res.json({ message: 'Login successful', username: user.username });
-  } catch (error) {
-    res.status(500).json({ error: 'Server error' });
-  }
-});
-
-app.get('/rooms', async (req, res) => {
-  try {
-    const rooms = await db.all("SELECT * FROM rooms WHERE status = 'waiting'");
-    res.json(rooms);
-  } catch (error) {
-    res.status(500).json({ error: 'Server error' });
-  }
-});
-
-app.post('/rooms', async (req, res) => {
-  const { name, max_players } = req.body;
-
-  if (!name) {
-    return res.status(400).json({ error: 'Room name required' });
-  }
-
-  try {
-    const result = await db.run(
-      'INSERT INTO rooms (name, max_players) VALUES (?, ?)',
-      [name, max_players || 4]
-    );
-    const room = await db.get('SELECT * FROM rooms WHERE id = ?', [result.lastID]);
-
-    const rooms = await db.all("SELECT * FROM rooms WHERE status = 'waiting'");
-    io.emit('rooms-updated', rooms);
-
-    res.json(room);
-  } catch (error) {
-    res.status(500).json({ error: 'Server error' });
-  }
-});
+// ── socket events ──────────────────────────────────────────────────────────
 
 io.on('connection', (socket) => {
   console.log('Client connected:', socket.id);
 
   socket.on('join-room', async ({ roomId, username }) => {
+    if (socket.data.roomId === roomId) return;
+
     socket.join(`room-${roomId}`);
     socket.data.username = username;
     socket.data.roomId = roomId;
-    console.log(`${username} joined room ${roomId}`);
 
-    const rooms = await db.all("SELECT * FROM rooms WHERE status = 'waiting'");
-    io.emit('rooms-updated', rooms);
+    if (!roomPlayers[roomId]) roomPlayers[roomId] = new Set();
+    roomPlayers[roomId].add(username);
+
+    await emitRoomsUpdate();
+  });
+
+  socket.on('rejoin-room', ({ roomId, username }) => {
+    socket.join(`room-${roomId}`);
+    socket.data.username = username;
+    socket.data.roomId = roomId;
+
+    if (!roomPlayers[roomId]) roomPlayers[roomId] = new Set();
+    roomPlayers[roomId].add(username);
+
+    if (games[roomId]) {
+      socket.emit('game-state', getStateForPlayer(games[roomId], username));
+    }
   });
 
   socket.on('start-game', async ({ roomId }) => {
-    // collect all usernames in this socket.io room
+    const room = await db.get('SELECT * FROM rooms WHERE id = ?', [roomId]);
+    if (!room) return socket.emit('error', 'Raum nicht gefunden.');
+    if (room.owner && socket.data.username !== room.owner)
+      return socket.emit('error', 'Nur der Raum-Ersteller kann das Spiel starten.');
+
     const socketsInRoom = await io.in(`room-${roomId}`).fetchSockets();
     const players = socketsInRoom.map(s => s.data.username).filter(Boolean);
 
-    if (players.length < 2) {
-      socket.emit('error', 'Need at least 2 players to start');
-      return;
-    }
+    if (players.length < 2)
+      return socket.emit('error', 'Es werden mindestens 2 Spieler benötigt.');
 
     games[roomId] = createGame(players);
-
     await db.run("UPDATE rooms SET status = 'running' WHERE id = ?", [roomId]);
-    const rooms = await db.all("SELECT * FROM rooms WHERE status = 'waiting'");
-    io.emit('rooms-updated', rooms);
+    await emitRoomsUpdate();
 
-    // send each player their personal game view
     for (const s of socketsInRoom) {
-      const username = s.data.username;
       s.emit('game-started', { roomId });
-      s.emit('game-state', getStateForPlayer(games[roomId], username));
+      if (s.data.username) {
+        s.emit('game-state', getStateForPlayer(games[roomId], s.data.username));
+      }
+    }
+  });
+
+  socket.on('get-game-state', ({ roomId }) => {
+    const game = games[roomId];
+    if (game && socket.data.username) {
+      socket.emit('game-state', getStateForPlayer(game, socket.data.username));
     }
   });
 
   socket.on('play-card', ({ roomId, cardIndex, chosenColor }) => {
-    const username = socket.data.username;
     const game = games[roomId];
     if (!game) return;
-
-    const result = applyPlayCard(game, username, cardIndex, chosenColor);
-    if (!result.ok) {
-      socket.emit('error', result.error);
-      return;
-    }
-
+    const result = applyPlayCard(game, socket.data.username, cardIndex, chosenColor);
+    if (!result.ok) return socket.emit('error', result.error);
     broadcastGameState(roomId);
   });
 
   socket.on('draw-card', ({ roomId }) => {
-    const username = socket.data.username;
     const game = games[roomId];
     if (!game) return;
-
-    const result = applyDrawCard(game, username);
-    if (!result.ok) {
-      socket.emit('error', result.error);
-      return;
-    }
-
+    const result = applyDrawCard(game, socket.data.username);
+    if (!result.ok) return socket.emit('error', result.error);
     broadcastGameState(roomId);
   });
 
-  socket.on('disconnect', () => {
+  socket.on('leave-game', async ({ roomId, username }) => {
+    const game = games[roomId];
+    if (game) {
+      const wasCurrentPlayer = game.players[game.currentPlayerIndex] === username;
+
+      game.players = game.players.filter(p => p !== username);
+      delete game.hands[username];
+
+      if (game.players.length <= 1) {
+        game.status = 'finished';
+        game.winner = game.players[0] ?? null;
+        await broadcastGameState(roomId);
+        await db.run("DELETE FROM rooms WHERE id = ?", [roomId]);
+        delete games[roomId];
+        await emitRoomsUpdate();
+      } else {
+        if (wasCurrentPlayer || game.currentPlayerIndex >= game.players.length) {
+          game.currentPlayerIndex = game.currentPlayerIndex % game.players.length;
+        }
+        await broadcastGameState(roomId);
+      }
+    }
+    socket.leave(`room-${roomId}`);
+    socket.data.roomId = null;
+  });
+
+  socket.on('disconnect', async () => {
+    const { username, roomId } = socket.data;
     console.log('Client disconnected:', socket.id);
+
+    if (roomId && roomPlayers[roomId]) {
+      roomPlayers[roomId].delete(username);
+      // only update lobby if room is still waiting (no running game)
+      if (!games[roomId]) {
+        await emitRoomsUpdate();
+      }
+    }
   });
 });
 
-async function broadcastGameState(roomId) {
-  const game = games[roomId];
-  if (!game) return;
-
-  const socketsInRoom = await io.in(`room-${roomId}`).fetchSockets();
-  for (const s of socketsInRoom) {
-    const username = s.data.username;
-    if (username) {
-      s.emit('game-state', getStateForPlayer(game, username));
-    }
-  }
-}
-
 const PORT = process.env.PORT || 3000;
-httpServer.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+httpServer.listen(PORT, () => console.log(`Server running on port ${PORT}`));
