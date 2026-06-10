@@ -2,6 +2,7 @@
   import { onMount, onDestroy } from 'svelte';
   import { goto } from '$app/navigation';
   import { auth } from '$lib/auth.svelte.js';
+  import { session, setCurrentRoom } from '$lib/session.svelte.js';
   import { connectSocket, getSocket } from '$lib/socket.svelte.js';
 
   let rooms = $state([]);
@@ -9,7 +10,6 @@
   let maxPlayers = $state(4);
   let message = $state('');
   let joinedRoom = $state(null);
-  let activeGameRoomId = $state(null);
 
   async function loadRooms() {
     try {
@@ -52,14 +52,11 @@
   }
 
   onMount(() => {
-    activeGameRoomId = typeof localStorage !== 'undefined'
-      ? localStorage.getItem('currentRoomId') : null;
-
     loadRooms();
     const socket = connectSocket();
     socket.on('rooms-updated', (r) => { rooms = r; });
     socket.on('game-started', ({ roomId }) => {
-      if (typeof localStorage !== 'undefined') localStorage.setItem('currentRoomId', String(roomId));
+      setCurrentRoom(roomId);
       goto('/game');
     });
     socket.on('error', (msg) => { message = msg; });
@@ -72,7 +69,7 @@
 </script>
 
 <!-- Active game banner -->
-{#if activeGameRoomId}
+{#if session.currentRoomId}
   <div style="background:var(--primary-light); border:1px solid #bfdbfe; border-radius:var(--radius); padding:0.75rem 1rem; margin-bottom:1.5rem; display:flex; align-items:center; justify-content:space-between">
     <span style="color:var(--primary); font-weight:500; font-size:0.9rem">
       🃏 Du bist noch in einem laufenden Spiel!
@@ -90,9 +87,6 @@
     <div class="flex-1">
       <div class="flex items-center justify-between mb-4">
         <h2 style="font-size:1.1rem; font-weight:600; margin:0">Spielräume</h2>
-        <button onclick={loadRooms} style="font-size:0.85rem; color:var(--text-muted); background:none; border:none; cursor:pointer">
-          ↻ Aktualisieren
-        </button>
       </div>
 
       {#if rooms.length === 0}

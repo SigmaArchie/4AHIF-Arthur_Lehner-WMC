@@ -85,6 +85,8 @@ io.on('connection', (socket) => {
 
     if (games[roomId]) {
       socket.emit('game-state', getStateForPlayer(games[roomId], username));
+    } else {
+      socket.emit('no-active-game');
     }
   });
 
@@ -159,6 +161,13 @@ io.on('connection', (socket) => {
     }
     socket.leave(`room-${roomId}`);
     socket.data.roomId = null;
+  });
+
+  socket.on('chat-message', ({ roomId, username, text }) => {
+    if (!text || text.trim().length === 0 || text.length > 200) return;
+    io.to(`room-${roomId}`).emit('chat-message', {
+      username, text: text.trim(), time: Date.now()
+    });
   });
 
   socket.on('disconnect', async () => {

@@ -2,8 +2,8 @@
   import './layout.css';
   import favicon from '$lib/assets/favicon.svg';
   import { auth, logout } from '$lib/auth.svelte.js';
+  import { session, initSession } from '$lib/session.svelte.js';
   import { page } from '$app/stores';
-  import { afterNavigate } from '$app/navigation';
   import { onMount } from 'svelte';
 
   let { children } = $props();
@@ -14,16 +14,7 @@
     { href: '/profile', label: 'Profil' },
   ];
 
-  let currentRoomId = $state(null);
-
-  function refreshRoomId() {
-    currentRoomId = typeof localStorage !== 'undefined'
-      ? localStorage.getItem('currentRoomId')
-      : null;
-  }
-
-  onMount(refreshRoomId);
-  afterNavigate(refreshRoomId);
+  onMount(() => { initSession(); });
 </script>
 
 <svelte:head>
@@ -51,7 +42,7 @@
           </a>
         {/each}
 
-        {#if currentRoomId}
+        {#if session.currentRoomId}
           <a href="/game"
              style="display:flex; align-items:center; gap:6px; padding:0.45rem 0.75rem; border-radius:20px; font-size:0.85rem; font-weight:600; margin-top:0.75rem;
                     background:var(--primary-light); color:var(--primary);
