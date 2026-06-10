@@ -45,5 +45,27 @@ module.exports = function (db) {
     }
   });
 
+  router.put('/profile/password', async (req, res) => {
+    const { username, oldPassword, newPassword } = req.body;
+    if (!username || !oldPassword || !newPassword)
+      return res.status(400).json({ error: 'Alle Felder erforderlich.' });
+    if (newPassword.length < 6)
+      return res.status(400).json({ error: 'Neues Passwort muss mindestens 6 Zeichen lang sein.' });
+
+    try {
+      const user = await db.get('SELECT * FROM users WHERE username = ?', [username]);
+      if (!user) return res.status(404).json({ error: 'User nicht gefunden.' });
+
+      const match = await bcrypt.compare(oldPassword, user.password);
+      if (!match) return res.status(401).json({ error: 'Altes Passwort ist falsch.' });
+
+      const hashed = await bcrypt.hash(newPassword, SALT_ROUNDS);
+      await db.run('UPDATE users SET password = ? WHERE username = ?', [hashed, username]);
+      res.json({ message: 'Passwort erfolgreich geändert.' });
+    } catch {
+      res.status(500).json({ error: 'Server error' });
+    }
+  });
+
   return router;
 };

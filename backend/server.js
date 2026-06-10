@@ -31,6 +31,7 @@ const roomPlayers = {};
   app.get('/', (req, res) => res.send('Backend is running'));
   app.use('/', require('./routes/auth')(db));
   app.use('/', require('./routes/rooms')(db, io));
+  app.use('/', require('./routes/stats')(db));
 })();
 
 // ── helpers ────────────────────────────────────────────────────────────────
@@ -44,6 +45,16 @@ async function emitRoomsUpdate() {
     })
   );
   io.emit('rooms-updated', roomsWithCounts);
+}
+
+async function saveGameResult(game) {
+  if (game.saved || !game.winner) return;
+  game.saved = true;
+  const original = game.originalPlayers || game.players;
+  await db.run(
+    'INSERT INTO game_results (winner, players, player_count) VALUES (?, ?, ?)',
+    [game.winner, original.join(','), original.length]
+  );
 }
 
 async function broadcastGameState(roomId) {
@@ -103,6 +114,7 @@ io.on('connection', (socket) => {
       return socket.emit('error', 'Es werden mindestens 2 Spieler benötigt.');
 
     games[roomId] = createGame(players);
+    games[roomId].originalPlayers = [...players];
     await db.run("UPDATE rooms SET status = 'running' WHERE id = ?", [roomId]);
     await emitRoomsUpdate();
 
@@ -121,12 +133,13 @@ io.on('connection', (socket) => {
     }
   });
 
-  socket.on('play-card', ({ roomId, cardIndex, chosenColor }) => {
+  socket.on('play-card', async ({ roomId, cardIndex, chosenColor }) => {
     const game = games[roomId];
     if (!game) return;
     const result = applyPlayCard(game, socket.data.username, cardIndex, chosenColor);
     if (!result.ok) return socket.emit('error', result.error);
-    broadcastGameState(roomId);
+    await broadcastGameState(roomId);
+    if (game.status === 'finished') await saveGameResult(game);
   });
 
   socket.on('draw-card', ({ roomId }) => {
@@ -148,6 +161,7 @@ io.on('connection', (socket) => {
       if (game.players.length <= 1) {
         game.status = 'finished';
         game.winner = game.players[0] ?? null;
+        await saveGameResult(game);
         await broadcastGameState(roomId);
         await db.run("DELETE FROM rooms WHERE id = ?", [roomId]);
         delete games[roomId];

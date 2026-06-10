@@ -23,6 +23,14 @@ async function initDatabase() {
       owner TEXT NOT NULL DEFAULT '',
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
+
+    CREATE TABLE IF NOT EXISTS game_results (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      winner TEXT NOT NULL,
+      players TEXT NOT NULL,
+      player_count INTEGER NOT NULL,
+      finished_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
   `);
 
   // add owner column to existing databases that don't have it yet
