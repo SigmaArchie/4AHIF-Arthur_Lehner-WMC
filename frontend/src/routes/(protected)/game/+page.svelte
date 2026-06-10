@@ -4,18 +4,28 @@
   import { auth } from '$lib/auth.svelte.js';
   import { setCurrentRoom } from '$lib/session.svelte.js';
   import { connectSocket, getSocket } from '$lib/socket.svelte.js';
+  import { t } from '$lib/i18n.svelte.js';
 
   let gameState = $state(null);
   let roomId = $state(null);
   let colorPickerVisible = $state(false);
   let selectedCardIndex = $state(null);
-  let errorMsg = $state('');
   let confirmLeave = $state(false);
+  let chatOpen = $state(false);
 
   // chat
   let messages = $state([]);
   let chatText = $state('');
   let chatContainer;
+
+  // toasts
+  let toasts = $state([]);
+
+  function addToast(msg, type = 'error') {
+    const id = Date.now();
+    toasts = [...toasts, { id, msg, type }];
+    setTimeout(() => { toasts = toasts.filter(toast => toast.id !== id); }, 3000);
+  }
 
   const isMyTurn = $derived(gameState?.currentPlayer === auth.username);
   const myHand = $derived(
@@ -44,7 +54,6 @@
   }
 
   function playCard(cardIndex, card) {
-    errorMsg = '';
     if (card.color === 'wild' || card.value === 'wild+4') {
       selectedCardIndex = cardIndex;
       colorPickerVisible = true;
@@ -60,7 +69,6 @@
   }
 
   function drawCard() {
-    errorMsg = '';
     getSocket()?.emit('draw-card', { roomId });
   }
 
@@ -77,13 +85,12 @@
     const socket = connectSocket();
     socket.on('game-state', (state) => {
       gameState = state;
-      errorMsg = '';
       if (state.status === 'finished') setCurrentRoom(null);
     });
     socket.on('chat-message', (msg) => {
       messages = [...messages, msg];
     });
-    socket.on('error', (msg) => { errorMsg = msg; });
+    socket.on('error', (msg) => { addToast(msg); });
     socket.on('no-active-game', () => { setCurrentRoom(null); goto('/lobby'); });
     socket.emit('rejoin-room', { roomId, username: auth.username });
   });
@@ -109,7 +116,6 @@
     overflow: hidden;
   }
 
-  /* ── game main column ── */
   .game-main {
     flex: 1;
     display: flex;
@@ -126,6 +132,8 @@
     align-items: center;
     justify-content: space-between;
     flex-shrink: 0;
+    gap: 0.5rem;
+    flex-wrap: wrap;
   }
 
   .game-field {
@@ -238,11 +246,18 @@
   }
 </style>
 
+<!-- Toast container -->
+<div class="toast-container">
+  {#each toasts as toast (toast.id)}
+    <div class="toast {toast.type}">{toast.msg}</div>
+  {/each}
+</div>
+
 {#if !gameState}
   <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:calc(100vh - 58px); gap:1rem; color:var(--text-muted)">
     <div style="font-size:3rem">🃏</div>
-    <p style="margin:0; font-size:1rem">Warte auf Spielstart...</p>
-    <button onclick={() => goto('/lobby')} class="btn-secondary" style="font-size:0.85rem">← Zurück zur Lobby</button>
+    <p style="margin:0; font-size:1rem">{t('waitingStart')}</p>
+    <button onclick={() => goto('/lobby')} class="btn-secondary" style="font-size:0.85rem">{t('backToLobby')}</button>
   </div>
 
 {:else}
@@ -252,21 +267,26 @@
     <div class="game-main">
 
       <div class="game-topbar">
-        <div style="display:flex; align-items:center; gap:1rem">
+        <div style="display:flex; align-items:center; gap:1rem; flex-wrap:wrap">
           {#if isMyTurn}
-            <span style="font-weight:700; color:var(--success); font-size:1rem">✓ Du bist dran!</span>
+            <span style="font-weight:700; color:var(--success); font-size:1rem">{t('yourTurn')}</span>
           {:else}
             <span style="color:var(--text-muted); font-size:0.9rem">
-              Warte auf <strong style="color:var(--text)">{gameState.currentPlayer}</strong>…
+              {t('waitingFor')} <strong style="color:var(--text)">{gameState.currentPlayer}</strong>…
             </span>
           {/if}
           {#if gameState.pendingDraw > 0}
             <span style="background:#fef2f2; color:var(--danger); border:1px solid #fecaca; border-radius:20px; padding:0.2rem 0.7rem; font-size:0.8rem; font-weight:700">
-              +{gameState.pendingDraw} ziehen!
+              +{gameState.pendingDraw} {t('pendingDraw')}
             </span>
           {/if}
         </div>
-        <button onclick={() => confirmLeave = true} class="btn-danger">Aufgeben</button>
+        <div style="display:flex; align-items:center; gap:0.5rem">
+          <button class="chat-toggle-btn" onclick={() => chatOpen = !chatOpen}>
+            {t('openChat')} {#if messages.length > 0}({messages.length}){/if}
+          </button>
+          <button onclick={() => confirmLeave = true} class="btn-danger">{t('surrender')}</button>
+        </div>
       </div>
 
       <div class="game-field">
@@ -284,7 +304,10 @@
                 {/each}
               </div>
               <div style="font-weight:600; font-size:0.875rem">{player}</div>
-              <div style="font-size:0.75rem; color:var(--text-muted)">{count} Karten</div>
+              <div style="display:flex; align-items:center; gap:0.35rem; font-size:0.75rem; color:var(--text-muted)">
+                {count} {t('cards')}
+                {#if count === 1}<span class="uno-badge">UNO!</span>{/if}
+              </div>
             </div>
           {/each}
         </div>
@@ -297,7 +320,7 @@
               <span class="card-corner-bottom">{gameState.topCard.value}</span>
             </div>
             <div class="pile-label">
-              Ablagestapel
+              {t('discardPile')}
               {#if gameState.topCard.color === 'wild'}
                 <br/><span style="color:var(--primary); font-weight:600">{gameState.currentColor}</span>
               {/if}
@@ -306,13 +329,8 @@
 
           <div class="status-box">
             <div class="direction-badge">
-              {gameState.direction === 1 ? '→ Uhrzeigersinn' : '← Gegenuhrzeiger'}
+              {gameState.direction === 1 ? t('clockwise') : t('counterClock')}
             </div>
-            {#if errorMsg}
-              <div style="margin-top:0.5rem; font-size:0.8rem; color:var(--danger); background:#fef2f2; border:1px solid #fecaca; border-radius:8px; padding:0.35rem 0.6rem">
-                {errorMsg}
-              </div>
-            {/if}
           </div>
 
           <div style="display:flex; flex-direction:column; align-items:center">
@@ -327,7 +345,7 @@
                 {/if}
               </div>
             </div>
-            <div class="pile-label">{gameState.deckCount} Karten</div>
+            <div class="pile-label">{gameState.deckCount} {t('cards')}</div>
           </div>
         </div>
 
@@ -335,7 +353,8 @@
 
       <div class="game-hand">
         <div style="font-size:0.8rem; color:var(--text-muted); text-align:center; margin-bottom:0.5rem">
-          Deine Karten ({myHand.length})
+          {t('yourCards')} ({myHand.length})
+          {#if myHand.length === 1}<span class="uno-badge" style="margin-left:0.4rem">UNO!</span>{/if}
         </div>
         <div class="hand-cards">
           {#each myHand as card, i}
@@ -356,11 +375,11 @@
     </div>
 
     <!-- ── Chat-Sidebar ── -->
-    <div class="game-chat">
-      <div class="chat-header">💬 Chat</div>
+    <div class="game-chat {chatOpen ? 'chat-open' : ''}">
+      <div class="chat-header">{t('chatTitle')}</div>
       <div class="chat-messages" bind:this={chatContainer}>
         {#if messages.length === 0}
-          <div class="chat-empty">Noch keine Nachrichten</div>
+          <div class="chat-empty">{t('noMessages')}</div>
         {/if}
         {#each messages as msg}
           <div class="chat-msg {msg.username === auth.username ? 'own' : 'other'}">
@@ -376,7 +395,7 @@
         <input
           bind:value={chatText}
           onkeydown={e => e.key === 'Enter' && sendChat()}
-          placeholder="Nachricht..."
+          placeholder={t('chatPlaceholder')}
           maxlength="200"
         />
         <button onclick={sendChat} class="chat-send-btn">→</button>
@@ -392,10 +411,10 @@
           {gameState.winner === auth.username ? '🎉' : '😔'}
         </div>
         <h2 style="font-size:1.5rem; font-weight:700; margin:0 0 0.5rem">
-          {gameState.winner === auth.username ? 'Du hast gewonnen!' : `${gameState.winner} hat gewonnen!`}
+          {gameState.winner === auth.username ? t('youWon') : `${gameState.winner} ${t('won')}`}
         </h2>
-        <p style="color:var(--text-muted); font-size:0.9rem; margin:0 0 1.5rem">Gutes Spiel!</p>
-        <button onclick={leaveGame} class="btn-primary">Zurück zur Lobby</button>
+        <p style="color:var(--text-muted); font-size:0.9rem; margin:0 0 1.5rem">{t('goodGame')}</p>
+        <button onclick={leaveGame} class="btn-primary">{t('backToLobby')}</button>
       </div>
     </div>
   {/if}
@@ -404,9 +423,9 @@
 {#if colorPickerVisible}
   <div class="modal-overlay">
     <div class="modal">
-      <p style="font-weight:600; margin:0 0 1rem">Wähle eine Farbe:</p>
+      <p style="font-weight:600; margin:0 0 1rem">{t('chooseColor')}</p>
       <div style="display:flex; gap:0.75rem; justify-content:center">
-        {#each [['red','Rot'],['blue','Blau'],['green','Grün'],['yellow','Gelb']] as [color, label]}
+        {#each [['red', t('red')],['blue', t('blue')],['green', t('green')],['yellow', t('yellow')]] as [color, label]}
           <button class="game-card card-{color}" style="cursor:pointer; height:70px; width:70px"
                   onclick={() => chooseColor(color)}>
             <span class="card-center" style="font-size:0.75rem; width:52px; height:52px">{label}</span>
@@ -420,13 +439,13 @@
 {#if confirmLeave}
   <div class="modal-overlay">
     <div class="modal">
-      <p style="font-weight:600; font-size:1rem; margin:0 0 0.5rem">Spiel verlassen?</p>
+      <p style="font-weight:600; font-size:1rem; margin:0 0 0.5rem">{t('surrenderTitle')}</p>
       <p style="color:var(--text-muted); font-size:0.875rem; margin:0 0 1.5rem">
-        Wenn du aufgibst, gewinnst du automatisch nicht mehr.
+        {t('surrenderHint')}
       </p>
       <div style="display:flex; gap:0.75rem; justify-content:center">
-        <button onclick={() => confirmLeave = false} class="btn-secondary">Abbrechen</button>
-        <button onclick={leaveGame} class="btn-danger" style="background:var(--danger); color:white">Ja, verlassen</button>
+        <button onclick={() => confirmLeave = false} class="btn-secondary">{t('cancel')}</button>
+        <button onclick={leaveGame} class="btn-danger" style="background:var(--danger); color:white">{t('yesLeave')}</button>
       </div>
     </div>
   </div>

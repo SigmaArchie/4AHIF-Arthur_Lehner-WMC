@@ -1,6 +1,7 @@
 <script>
   import { onMount } from 'svelte';
   import { auth } from '$lib/auth.svelte.js';
+  import { t } from '$lib/i18n.svelte.js';
 
   let stats = $state(null);
   let leaderboard = $state([]);
@@ -24,13 +25,13 @@
     pwMsg = '';
     pwSuccess = false;
     if (!oldPassword || !newPassword || !confirmPassword) {
-      pwMsg = 'Alle Felder ausfüllen.'; return;
+      pwMsg = t('pwFillAll'); return;
     }
     if (newPassword !== confirmPassword) {
-      pwMsg = 'Neue Passwörter stimmen nicht überein.'; return;
+      pwMsg = t('pwNoMatch'); return;
     }
     if (newPassword.length < 6) {
-      pwMsg = 'Mindestens 6 Zeichen erforderlich.'; return;
+      pwMsg = t('pwTooShort'); return;
     }
     const res = await fetch('http://localhost:3000/profile/password', {
       method: 'PUT',
@@ -48,7 +49,7 @@
 <div style="max-width:960px; margin:0 auto; display:flex; flex-direction:column; gap:1.25rem">
 
   <!-- Zeile 1: Account + Stats -->
-  <div style="display:grid; grid-template-columns:200px 1fr; gap:1.25rem">
+  <div class="profile-row-1" style="display:grid; grid-template-columns:200px 1fr; gap:1.25rem">
 
     <!-- Account -->
     <div class="surface-card" style="display:flex; flex-direction:column; align-items:center; gap:0.75rem; text-align:center">
@@ -57,19 +58,19 @@
       </div>
       <div>
         <div style="font-size:1.1rem; font-weight:700">{auth.username}</div>
-        <div style="font-size:0.8rem; color:var(--text-muted); margin-top:2px">Spieler</div>
+        <div style="font-size:0.8rem; color:var(--text-muted); margin-top:2px">{t('player')}</div>
       </div>
     </div>
 
     <!-- Statistiken -->
     <div class="surface-card">
-      <h3 style="font-size:0.95rem; font-weight:600; margin:0 0 1rem">Meine Statistiken</h3>
+      <h3 style="font-size:0.95rem; font-weight:600; margin:0 0 1rem">{t('myStats')}</h3>
       {#if stats}
         <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:0.75rem">
           {#each [
-            { label: 'Gespielte Spiele', value: stats.games },
-            { label: 'Siege',            value: stats.wins },
-            { label: 'Siegesquote',      value: stats.winRate + '%' }
+            { label: t('gamesPlayed'), value: stats.games },
+            { label: t('wins'),        value: stats.wins },
+            { label: t('winRate'),     value: stats.winRate + '%' }
           ] as s}
             <div style="background:var(--surface2); border-radius:var(--radius); padding:1rem; text-align:center">
               <div style="font-size:1.75rem; font-weight:800; color:var(--primary)">{s.value}</div>
@@ -78,29 +79,29 @@
           {/each}
         </div>
       {:else}
-        <p style="color:var(--text-muted); font-size:0.9rem; margin:0">Lade Statistiken...</p>
+        <p style="color:var(--text-muted); font-size:0.9rem; margin:0">{t('loadingStats')}</p>
       {/if}
     </div>
 
   </div>
 
   <!-- Zeile 2: Passwort ändern + Leaderboard -->
-  <div style="display:grid; grid-template-columns:1fr 1fr; gap:1.25rem">
+  <div class="profile-row-2" style="display:grid; grid-template-columns:1fr 1fr; gap:1.25rem">
 
     <!-- Passwort ändern -->
     <div class="surface-card">
-      <h3 style="font-size:0.95rem; font-weight:600; margin:0 0 1rem">Passwort ändern</h3>
+      <h3 style="font-size:0.95rem; font-weight:600; margin:0 0 1rem">{t('changePw')}</h3>
       <div style="display:flex; flex-direction:column; gap:0.75rem">
         <div>
-          <label style="font-size:0.85rem; font-weight:500; display:block; margin-bottom:4px">Altes Passwort</label>
+          <label style="font-size:0.85rem; font-weight:500; display:block; margin-bottom:4px">{t('oldPassword')}</label>
           <input bind:value={oldPassword} type="password" placeholder="••••••" />
         </div>
         <div>
-          <label style="font-size:0.85rem; font-weight:500; display:block; margin-bottom:4px">Neues Passwort</label>
-          <input bind:value={newPassword} type="password" placeholder="Min. 6 Zeichen" />
+          <label style="font-size:0.85rem; font-weight:500; display:block; margin-bottom:4px">{t('newPassword')}</label>
+          <input bind:value={newPassword} type="password" placeholder="Min. 6" />
         </div>
         <div>
-          <label style="font-size:0.85rem; font-weight:500; display:block; margin-bottom:4px">Neues Passwort bestätigen</label>
+          <label style="font-size:0.85rem; font-weight:500; display:block; margin-bottom:4px">{t('confirmPw')}</label>
           <input bind:value={confirmPassword} type="password" placeholder="••••••" />
         </div>
         {#if pwMsg}
@@ -112,16 +113,16 @@
           </div>
         {/if}
         <button onclick={changePassword} class="btn-primary" style="width:100%; justify-content:center">
-          Speichern
+          {t('save')}
         </button>
       </div>
     </div>
 
     <!-- Leaderboard -->
     <div class="surface-card">
-      <h3 style="font-size:0.95rem; font-weight:600; margin:0 0 1rem">Bestenliste</h3>
+      <h3 style="font-size:0.95rem; font-weight:600; margin:0 0 1rem">{t('leaderboard')}</h3>
       {#if leaderboard.length === 0}
-        <p style="color:var(--text-muted); font-size:0.9rem; margin:0">Noch keine Spiele gespielt.</p>
+        <p style="color:var(--text-muted); font-size:0.9rem; margin:0">{t('noGames')}</p>
       {:else}
         <div style="display:flex; flex-direction:column; gap:0.3rem">
           {#each leaderboard as entry, i}
@@ -132,7 +133,7 @@
                 {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : i + 1}
               </span>
               <span style="flex:1; font-size:0.875rem; font-weight:{entry.username === auth.username ? '700' : '400'}">{entry.username}</span>
-              <span style="font-size:0.875rem; font-weight:600; color:var(--primary)">{entry.wins} Siege</span>
+              <span style="font-size:0.875rem; font-weight:600; color:var(--primary)">{entry.wins} {t('wins')}</span>
             </div>
           {/each}
         </div>

@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import { auth } from '$lib/auth.svelte.js';
+  import { t, lang } from '$lib/i18n.svelte.js';
 
   let username = $state('');
   let password = $state('');
@@ -15,7 +16,7 @@
 
   async function register() {
     if (!username.trim() || !password.trim()) {
-      message = 'Bitte alle Felder ausfüllen.';
+      message = t('fillAllFields');
       return;
     }
 
@@ -52,36 +53,36 @@
   <!-- Right: Form -->
   <div class="flex-1 flex items-center justify-center bg-white p-10">
     <div class="w-full max-w-sm">
-      <h2 class="text-2xl font-bold text-gray-900 mb-1">Account erstellen</h2>
+      <h2 class="text-2xl font-bold text-gray-900 mb-1">{t('registerTitle')}</h2>
       <p class="text-sm text-gray-500 mb-8">
-        Bereits registriert?
-        <a href="/login" class="text-purple-600 hover:underline font-medium">Anmelden</a>
+        {t('hasAccount')}
+        <a href="/login" class="text-purple-600 hover:underline font-medium">{t('loginLink')}</a>
       </p>
 
       {#if success}
         <div class="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm mb-4">
-          ✓ Account erstellt! Du wirst zum Login weitergeleitet...
+          {t('accountCreated')}
         </div>
       {/if}
 
       <div class="flex flex-col gap-4">
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Benutzername</label>
+          <label class="block text-sm font-medium text-gray-700 mb-1">{t('username')}</label>
           <input
             bind:value={username}
             type="text"
-            placeholder="Wähle einen Benutzernamen"
+            placeholder={lang.current === 'de' ? 'Wähle einen Benutzernamen' : 'Choose a username'}
             class="border border-gray-300 p-3 rounded-lg w-full text-sm focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent"
           />
         </div>
 
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Passwort</label>
+          <label class="block text-sm font-medium text-gray-700 mb-1">{t('password')}</label>
           <div class="relative">
             <input
               bind:value={password}
               type={showPassword ? 'text' : 'password'}
-              placeholder="Wähle ein sicheres Passwort"
+              placeholder={lang.current === 'de' ? 'Wähle ein sicheres Passwort' : 'Choose a secure password'}
               class="border border-gray-300 p-3 rounded-lg w-full text-sm pr-24 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent"
             />
             <button
@@ -89,7 +90,7 @@
               onclick={() => showPassword = !showPassword}
               class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 hover:text-gray-600"
             >
-              {showPassword ? 'Verstecken' : 'Anzeigen'}
+              {showPassword ? t('hide') : t('show')}
             </button>
           </div>
         </div>
@@ -102,7 +103,7 @@
           onclick={register}
           class="bg-purple-600 hover:bg-purple-700 text-white p-3 rounded-lg font-semibold text-sm transition-colors mt-1"
         >
-          Registrieren
+          {t('registerBtn')}
         </button>
       </div>
     </div>

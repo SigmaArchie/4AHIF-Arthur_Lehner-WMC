@@ -202,3 +202,102 @@ input::placeholder { color: var(--text-light); }
   flex-shrink: 0;
   box-shadow: 0 1px 4px rgba(0,0,0,0.2);
 }
+
+/* ── UNO badge ────────────────────────────────────────── */
+.uno-badge {
+  background: #fef9c3; color: #854d0e;
+  border: 1px solid #fde047; border-radius: 20px;
+  font-size: 0.7rem; font-weight: 800;
+  padding: 0.1rem 0.4rem; letter-spacing: 0.5px;
+}
+
+/* ── sidebar responsive ───────────────────────────────── */
+.sidebar { transition: transform 0.25s ease; }
+
+.sidebar-overlay {
+  display: none;
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.35);
+  z-index: 199;
+}
+
+.hamburger-btn {
+  display: none;
+  background: none; border: none; cursor: pointer;
+  padding: 0.4rem; color: var(--text-muted); font-size: 1.3rem;
+  align-items: center; justify-content: center;
+  border-radius: 6px; transition: background 0.15s;
+}
+.hamburger-btn:hover { background: var(--surface2); }
+
+@media (max-width: 768px) {
+  .sidebar {
+    position: fixed !important;
+    top: 0; bottom: 0; left: 0;
+    z-index: 200;
+    transform: translateX(-100%);
+    width: 220px !important;
+  }
+  .sidebar.open {
+    transform: translateX(0);
+    box-shadow: 4px 0 24px rgba(0,0,0,0.18);
+  }
+  .sidebar-overlay { display: block !important; }
+  .hamburger-btn { display: flex !important; }
+}
+
+/* ── toast notifications ──────────────────────────────── */
+.toast-container {
+  position: fixed; bottom: 1.5rem; right: 1.5rem;
+  display: flex; flex-direction: column; gap: 0.5rem;
+  z-index: 500; pointer-events: none;
+}
+.toast {
+  background: var(--text); color: white;
+  padding: 0.6rem 1rem; border-radius: var(--radius);
+  font-size: 0.875rem; box-shadow: var(--shadow-lg);
+  animation: toast-in 0.2s ease;
+}
+.toast.error { background: var(--danger); }
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── mobile game chat ─────────────────────────────────── */
+.chat-toggle-btn {
+  display: none;
+  align-items: center; gap: 0.3rem;
+  padding: 0.3rem 0.7rem;
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 20px; cursor: pointer; font-size: 0.8rem;
+  color: var(--text-muted); font-weight: 500; transition: background 0.15s;
+}
+.chat-toggle-btn:hover { background: var(--border); }
+
+@media (max-width: 768px) {
+  .game-outer { flex-direction: column !important; }
+  .game-chat {
+    position: fixed !important;
+    bottom: 0; left: 0; right: 0;
+    width: 100% !important; height: 280px;
+    border-left: none !important;
+    border-top: 1px solid var(--border);
+    z-index: 50;
+    transition: transform 0.25s ease;
+    transform: translateY(100%);
+  }
+  .game-chat.chat-open { transform: translateY(0); }
+  .chat-toggle-btn { display: flex !important; }
+}
+
+/* ── lobby responsive ─────────────────────────────────── */
+@media (max-width: 768px) {
+  .lobby-create { width: 100% !important; }
+}
+
+/* ── profile responsive ───────────────────────────────── */
+@media (max-width: 768px) {
+  .profile-row-1 { grid-template-columns: 1fr !important; }
+  .profile-row-2 { grid-template-columns: 1fr !important; }
+}

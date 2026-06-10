@@ -3,6 +3,7 @@
   import { goto } from '$app/navigation';
   import { auth, login } from '$lib/auth.svelte.js';
   import { connectSocket } from '$lib/socket.svelte.js';
+  import { t, lang } from '$lib/i18n.svelte.js';
 
   let username = $state('');
   let password = $state('');
@@ -15,7 +16,7 @@
 
   async function handleLogin() {
     if (!username.trim() || !password.trim()) {
-      message = 'Bitte alle Felder ausfüllen.';
+      message = t('fillAllFields');
       return;
     }
 
@@ -50,30 +51,30 @@
   <!-- Right: Form -->
   <div class="flex-1 flex items-center justify-center bg-white p-10">
     <div class="w-full max-w-sm">
-      <h2 class="text-2xl font-bold text-gray-900 mb-1">Willkommen zurück</h2>
+      <h2 class="text-2xl font-bold text-gray-900 mb-1">{t('loginTitle')}</h2>
       <p class="text-sm text-gray-500 mb-8">
-        Noch keinen Account?
-        <a href="/register" class="text-purple-600 hover:underline font-medium">Registrieren</a>
+        {t('noAccount')}
+        <a href="/register" class="text-purple-600 hover:underline font-medium">{t('registerLink')}</a>
       </p>
 
       <div class="flex flex-col gap-4">
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Benutzername</label>
+          <label class="block text-sm font-medium text-gray-700 mb-1">{t('username')}</label>
           <input
             bind:value={username}
             type="text"
-            placeholder="Dein Benutzername"
+            placeholder={lang.current === 'de' ? 'Dein Benutzername' : 'Your username'}
             class="border border-gray-300 p-3 rounded-lg w-full text-sm focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent"
           />
         </div>
 
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Passwort</label>
+          <label class="block text-sm font-medium text-gray-700 mb-1">{t('password')}</label>
           <div class="relative">
             <input
               bind:value={password}
               type={showPassword ? 'text' : 'password'}
-              placeholder="Dein Passwort"
+              placeholder={lang.current === 'de' ? 'Dein Passwort' : 'Your password'}
               class="border border-gray-300 p-3 rounded-lg w-full text-sm pr-24 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent"
             />
             <button
@@ -81,7 +82,7 @@
               onclick={() => showPassword = !showPassword}
               class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 hover:text-gray-600"
             >
-              {showPassword ? 'Verstecken' : 'Anzeigen'}
+              {showPassword ? t('hide') : t('show')}
             </button>
           </div>
         </div>
@@ -94,7 +95,7 @@
           onclick={handleLogin}
           class="bg-purple-600 hover:bg-purple-700 text-white p-3 rounded-lg font-semibold text-sm transition-colors mt-1"
         >
-          Anmelden
+          {t('loginBtn')}
         </button>
       </div>
     </div>
