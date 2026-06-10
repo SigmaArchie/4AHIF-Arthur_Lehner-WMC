@@ -178,7 +178,7 @@ input::placeholder { color: var(--text-light); }
 .card-blue   { background: linear-gradient(145deg, #3b82f6, #1d4ed8); }
 .card-green  { background: linear-gradient(145deg, #22c55e, #15803d); }
 .card-yellow { background: linear-gradient(145deg, #f59e0b, #b45309); color: #1a1a1a; text-shadow: none; }
-.card-wild   { background: linear-gradient(145deg, #8b5cf6, #4c1d95); }
+.card-wild   { background: linear-gradient(145deg, #374151, #111827); }
 
 .card-back {
   background: linear-gradient(145deg, #1e40af, #1e3a8a);
@@ -293,6 +293,7 @@ input::placeholder { color: var(--text-light); }
 
 /* ── lobby responsive ─────────────────────────────────── */
 @media (max-width: 768px) {
+  .lobby-layout { flex-direction: column !important; }
   .lobby-create { width: 100% !important; }
 }
 

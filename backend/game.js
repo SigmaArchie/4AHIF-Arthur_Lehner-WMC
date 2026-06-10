@@ -71,6 +71,11 @@ function topCard(gameState) {
 }
 
 function canPlayCard(card, gameState) {
+  // stacking rule: when +2/+4 is pending, only another +2 or +4 can be played
+  if (gameState.pendingDraw > 0) {
+    return card.value === '+2' || card.value === 'wild+4';
+  }
+
   const top = topCard(gameState);
   const { currentColor } = gameState;
 

@@ -74,7 +74,13 @@ io.on('connection', (socket) => {
   console.log('Client connected:', socket.id);
 
   socket.on('join-room', async ({ roomId, username }) => {
-    if (socket.data.roomId === roomId) return;
+    const prevRoomId = socket.data.roomId;
+    if (prevRoomId === roomId) return;
+
+    if (prevRoomId) {
+      socket.leave(`room-${prevRoomId}`);
+      if (roomPlayers[prevRoomId]) roomPlayers[prevRoomId].delete(username);
+    }
 
     socket.join(`room-${roomId}`);
     socket.data.username = username;

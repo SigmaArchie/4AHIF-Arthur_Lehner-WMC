@@ -21,8 +21,23 @@
     }
   }
 
+  async function deleteRoom(roomId) {
+    try {
+      const res = await fetch(`http://localhost:3000/rooms/${roomId}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: auth.username })
+      });
+      const data = await res.json();
+      if (!res.ok) message = data.error;
+      else if (joinedRoom?.id === roomId) joinedRoom = null;
+    } catch {
+      message = t('connFailed');
+    }
+  }
+
   async function createRoom() {
-    if (!roomName.trim()) return;
+    if (session.currentRoomId || !roomName.trim()) return;
     try {
       const res = await fetch('http://localhost:3000/rooms', {
         method: 'POST',
@@ -41,6 +56,7 @@
   }
 
   function joinRoom(room) {
+    if (session.currentRoomId) return;
     if (!auth.username) { message = t('mustLogin'); return; }
     const socket = connectSocket();
     socket.emit('join-room', { roomId: room.id, username: auth.username });
@@ -82,7 +98,7 @@
 {/if}
 
 <div style="max-width:960px; margin:0 auto">
-  <div class="flex gap-6" style="align-items:flex-start">
+  <div class="lobby-layout flex gap-6" style="align-items:flex-start">
 
     <!-- Raumliste -->
     <div class="flex-1">
@@ -112,14 +128,28 @@
                 </div>
               </div>
 
-              <div class="flex gap-2">
+              <div class="flex gap-2" style="align-items:center">
                 {#if joinedRoom?.id === room.id}
                   <span style="font-size:0.85rem; font-weight:600; color:var(--primary); padding:0.4rem 0">{t('joined')}</span>
                   {#if auth.username === room.owner}
                     <button onclick={startGame} class="btn-secondary" style="margin-left:auto">{t('startGame')}</button>
                   {/if}
                 {:else}
-                  <button onclick={() => joinRoom(room)} class="btn-primary">{t('join')}</button>
+                  <button onclick={() => joinRoom(room)} class="btn-primary"
+                          disabled={!!session.currentRoomId}
+                          title={session.currentRoomId ? t('finishGameFirst') : ''}>
+                    {t('join')}
+                  </button>
+                {/if}
+                {#if auth.username === room.owner}
+                  <button
+                    onclick={() => deleteRoom(room.id)}
+                    title={t('deleteRoom')}
+                    style="margin-left:auto; background:none; border:none; cursor:pointer; color:var(--text-muted); font-size:1rem; padding:0.3rem; border-radius:6px; transition:color 0.15s, background 0.15s; line-height:1"
+                    onmouseenter={e => { e.currentTarget.style.color='var(--danger)'; e.currentTarget.style.background='#fef2f2'; }}
+                    onmouseleave={e => { e.currentTarget.style.color='var(--text-muted)'; e.currentTarget.style.background='none'; }}>
+                    🗑
+                  </button>
                 {/if}
               </div>
             </div>
@@ -150,9 +180,15 @@
             <option value={4}>4 {t('player')}</option>
           </select>
         </div>
-        <button onclick={createRoom} class="btn-primary" style="width:100%; justify-content:center">
+        <button onclick={createRoom} class="btn-primary" style="width:100%; justify-content:center"
+                disabled={!!session.currentRoomId}>
           {t('createJoin')}
         </button>
+        {#if session.currentRoomId}
+          <p style="font-size:0.78rem; color:var(--text-muted); margin:0; text-align:center">
+            {t('finishGameFirst')}
+          </p>
+        {/if}
       </div>
     </div>
 

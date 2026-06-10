@@ -52,6 +52,8 @@ const translations = {
     createRoomError: 'Fehler beim Erstellen des Raums.',
     mustLogin: 'Du musst eingeloggt sein!',
     show: 'Anzeigen', hide: 'Verstecken',
+    deleteRoom: 'Raum löschen',
+    finishGameFirst: 'Beende zuerst dein laufendes Spiel.',
   },
   en: {
     lobby: 'Lobby', profile: 'Profile', logout: 'Logout',
@@ -99,6 +101,8 @@ const translations = {
     createRoomError: 'Error creating room.',
     mustLogin: 'You must be logged in!',
     show: 'Show', hide: 'Hide',
+    deleteRoom: 'Delete room',
+    finishGameFirst: 'Finish your current game first.',
   }
 };
 

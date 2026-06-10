@@ -50,12 +50,12 @@
           </a>
         {/each}
 
-        {#if session.currentRoomId}
+        {#if session.currentRoomId && !$page.url.pathname.startsWith('/game')}
           <a href="/game"
              onclick={() => menuOpen = false}
              style="display:flex; align-items:center; gap:6px; padding:0.45rem 0.75rem; border-radius:20px; font-size:0.85rem; font-weight:600; margin-top:0.75rem;
                     background:var(--primary-light); color:var(--primary); border:1px solid #bfdbfe">
-            🃏 {t('backToGame')}
+            {t('backToGame')}
           </a>
         {/if}
       </nav>

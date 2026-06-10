@@ -5,6 +5,7 @@
   import { setCurrentRoom } from '$lib/session.svelte.js';
   import { connectSocket, getSocket } from '$lib/socket.svelte.js';
   import { t } from '$lib/i18n.svelte.js';
+  import reverseImg from '$lib/assets/reverse.jpg';
 
   let gameState = $state(null);
   let roomId = $state(null);
@@ -54,7 +55,7 @@
   }
 
   function playCard(cardIndex, card) {
-    if (card.color === 'wild' || card.value === 'wild+4') {
+    if (card.color === 'wild') {
       selectedCardIndex = cardIndex;
       colorPickerVisible = true;
     } else {
@@ -99,6 +100,12 @@
     const s = getSocket();
     if (s) { s.off('game-state'); s.off('error'); s.off('no-active-game'); s.off('chat-message'); }
   });
+
+  function displayVal(v) {
+    if (v === 'wild+4') return '+4';
+    if (v === 'wild') return 'W';
+    return v;
+  }
 
   function fanRotation(i, total) {
     return ((i - (total - 1) / 2) * 8).toFixed(1);
@@ -314,17 +321,18 @@
 
         <div class="table-area">
           <div style="display:flex; flex-direction:column; align-items:center">
-            <div class="game-card card-{gameState.topCard.color}" style="transform:scale(1.1); cursor:default; pointer-events:none">
-              <span class="card-corner-top">{gameState.topCard.value}</span>
-              <span class="card-center">{gameState.topCard.value}</span>
-              <span class="card-corner-bottom">{gameState.topCard.value}</span>
-            </div>
-            <div class="pile-label">
-              {t('discardPile')}
-              {#if gameState.topCard.color === 'wild'}
-                <br/><span style="color:var(--primary); font-weight:600">{gameState.currentColor}</span>
+            <div class="game-card card-{gameState.topCard.color === 'wild' ? gameState.currentColor : gameState.topCard.color}" style="transform:scale(1.1); cursor:default; pointer-events:none">
+              {#if gameState.topCard.value === 'reverse'}
+                <span class="card-corner-top">↺</span>
+                <img src={reverseImg} alt="↺" style="width:42px; height:42px; border-radius:50%; object-fit:contain; background:rgba(255,255,255,0.22); border:2px solid rgba(255,255,255,0.45); padding:5px; filter:brightness(0) invert(1)" />
+                <span class="card-corner-bottom">↺</span>
+              {:else}
+                <span class="card-corner-top">{displayVal(gameState.topCard.value)}</span>
+                <span class="card-center">{displayVal(gameState.topCard.value)}</span>
+                <span class="card-corner-bottom">{displayVal(gameState.topCard.value)}</span>
               {/if}
             </div>
+            <div class="pile-label">{t('discardPile')}</div>
           </div>
 
           <div class="status-box">
@@ -364,9 +372,15 @@
               onclick={() => isMyTurn && playCard(i, card)}
               disabled={!isMyTurn}
             >
-              <span class="card-corner-top">{card.value}</span>
-              <span class="card-center">{card.value}</span>
-              <span class="card-corner-bottom">{card.value}</span>
+              {#if card.value === 'reverse'}
+                <span class="card-corner-top">↺</span>
+                <img src={reverseImg} alt="↺" style="width:42px; height:42px; border-radius:50%; object-fit:contain; background:rgba(255,255,255,0.22); border:2px solid rgba(255,255,255,0.45); padding:5px; filter:brightness(0) invert(1); pointer-events:none" />
+                <span class="card-corner-bottom">↺</span>
+              {:else}
+                <span class="card-corner-top">{displayVal(card.value)}</span>
+                <span class="card-center">{displayVal(card.value)}</span>
+                <span class="card-corner-bottom">{displayVal(card.value)}</span>
+              {/if}
             </button>
           {/each}
         </div>
@@ -383,9 +397,7 @@
         {/if}
         {#each messages as msg}
           <div class="chat-msg {msg.username === auth.username ? 'own' : 'other'}">
-            {#if msg.username !== auth.username}
-              <div class="chat-meta">{msg.username}</div>
-            {/if}
+            <div class="chat-meta">{msg.username}</div>
             <div class="chat-bubble">{msg.text}</div>
             <div class="chat-meta">{formatTime(msg.time)}</div>
           </div>

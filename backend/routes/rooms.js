@@ -2,7 +2,7 @@ const router = require('express').Router();
 
 module.exports = function (db, io) {
   async function emitRoomsUpdate() {
-    const rooms = await db.all("SELECT * FROM rooms WHERE status = 'waiting'");
+    const rooms = await db.all("SELECT * FROM rooms WHERE status = 'waiting' ORDER BY id DESC");
     const roomsWithCounts = await Promise.all(
       rooms.map(async (room) => {
         const sockets = await io.in(`room-${room.id}`).fetchSockets();
@@ -14,7 +14,7 @@ module.exports = function (db, io) {
 
   router.get('/rooms', async (req, res) => {
     try {
-      const rooms = await db.all("SELECT * FROM rooms WHERE status = 'waiting'");
+      const rooms = await db.all("SELECT * FROM rooms WHERE status = 'waiting' ORDER BY id DESC");
       const roomsWithCounts = await Promise.all(
         rooms.map(async (room) => {
           const sockets = await io.in(`room-${room.id}`).fetchSockets();
@@ -43,6 +43,24 @@ module.exports = function (db, io) {
       const room = await db.get('SELECT * FROM rooms WHERE id = ?', [result.lastID]);
       await emitRoomsUpdate();
       res.json(room);
+    } catch {
+      res.status(500).json({ error: 'Server error' });
+    }
+  });
+
+  router.delete('/rooms/:id', async (req, res) => {
+    const { id } = req.params;
+    const { username } = req.body;
+
+    try {
+      const room = await db.get('SELECT * FROM rooms WHERE id = ?', [id]);
+      if (!room) return res.status(404).json({ error: 'Raum nicht gefunden.' });
+      if (room.owner !== username) return res.status(403).json({ error: 'Nur der Ersteller kann den Raum löschen.' });
+      if (room.status !== 'waiting') return res.status(400).json({ error: 'Laufende Spiele können nicht gelöscht werden.' });
+
+      await db.run('DELETE FROM rooms WHERE id = ?', [id]);
+      await emitRoomsUpdate();
+      res.json({ message: 'Raum gelöscht.' });
     } catch {
       res.status(500).json({ error: 'Server error' });
     }
