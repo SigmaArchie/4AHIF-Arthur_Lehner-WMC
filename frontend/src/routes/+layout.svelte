@@ -10,7 +10,6 @@
 
   const navItems = [
     { href: '/lobby',   label: 'Lobby' },
-    { href: '/stats',   label: 'Statistiken' },
     { href: '/profile', label: 'Profil' },
   ];
 
