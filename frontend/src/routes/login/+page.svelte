@@ -4,6 +4,7 @@
   import { auth, login } from '$lib/auth.svelte.js';
   import { connectSocket } from '$lib/socket.svelte.js';
   import { t, lang } from '$lib/i18n.svelte.js';
+  import { API } from '$lib/api.js';
 
   let username = $state('');
   let password = $state('');
@@ -20,7 +21,7 @@
       return;
     }
 
-    const response = await fetch('http://localhost:3000/login', {
+    const response = await fetch(`${API}/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password })

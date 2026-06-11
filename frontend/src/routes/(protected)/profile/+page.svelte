@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import { auth } from '$lib/auth.svelte.js';
   import { t } from '$lib/i18n.svelte.js';
+  import { API } from '$lib/api.js';
 
   let stats = $state(null);
   let leaderboard = $state([]);
@@ -15,8 +16,8 @@
 
   onMount(async () => {
     const [sRes, lRes] = await Promise.all([
-      fetch(`http://localhost:3000/stats/${auth.username}`),
-      fetch('http://localhost:3000/leaderboard')
+      fetch(`${API}/stats/${auth.username}`),
+      fetch(`${API}/leaderboard`)
     ]);
     if (sRes.ok) stats = await sRes.json();
     if (lRes.ok) leaderboard = await lRes.json();
@@ -34,7 +35,7 @@
     if (newPassword.length < 6) {
       pwMsg = t('pwTooShort'); return;
     }
-    const res = await fetch('http://localhost:3000/profile/password', {
+    const res = await fetch(`${API}/profile/password`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username: auth.username, oldPassword, newPassword })

@@ -11,10 +11,10 @@ const { createGame, applyPlayCard, applyDrawCard, getStateForPlayer } = require(
 const app = express();
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
-  cors: { origin: 'http://localhost:5000' }
+  cors: { origin: '*' }
 });
 
-app.use(cors({ origin: 'http://localhost:5000' }));
+app.use(cors());
 app.use(express.json());
 
 let db;

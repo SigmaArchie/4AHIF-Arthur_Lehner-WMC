@@ -5,6 +5,7 @@
   import { session, setCurrentRoom } from '$lib/session.svelte.js';
   import { connectSocket, getSocket } from '$lib/socket.svelte.js';
   import { t } from '$lib/i18n.svelte.js';
+  import { API } from '$lib/api.js';
 
   let rooms = $state([]);
   let roomName = $state('');
@@ -14,7 +15,7 @@
 
   async function loadRooms() {
     try {
-      const res = await fetch('http://localhost:3000/rooms');
+      const res = await fetch(`${API}/rooms`);
       rooms = await res.json();
     } catch {
       message = t('connFailed');
@@ -23,7 +24,7 @@
 
   async function deleteRoom(roomId) {
     try {
-      const res = await fetch(`http://localhost:3000/rooms/${roomId}`, {
+      const res = await fetch(`${API}/rooms/${roomId}`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username: auth.username })
@@ -39,7 +40,7 @@
   async function createRoom() {
     if (session.currentRoomId || !roomName.trim()) return;
     try {
-      const res = await fetch('http://localhost:3000/rooms', {
+      const res = await fetch(`${API}/rooms`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: roomName.trim(), max_players: maxPlayers, owner: auth.username })

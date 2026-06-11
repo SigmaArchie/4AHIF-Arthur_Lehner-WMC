@@ -1,4 +1,5 @@
 import { io } from 'socket.io-client';
+import { API } from '$lib/api.js';
 
 export const socketStatus = $state({ connected: false });
 
@@ -6,7 +7,7 @@ let _socket = null;
 
 export function connectSocket() {
   if (!_socket) {
-    _socket = io('http://localhost:3000');
+    _socket = io(API);
     _socket.on('connect',    () => { socketStatus.connected = true;  });
     _socket.on('disconnect', () => { socketStatus.connected = false; });
   }

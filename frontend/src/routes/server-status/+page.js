@@ -1,5 +1,7 @@
+const API = import.meta.env.PUBLIC_API_URL ?? 'http://localhost:3000';
+
 export async function load({ fetch }) {
-  const response = await fetch('http://localhost:3000/');
+  const response = await fetch(`${API}/`);
   const message = await response.text();
 
   return {
