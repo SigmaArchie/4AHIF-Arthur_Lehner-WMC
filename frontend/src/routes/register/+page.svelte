@@ -16,14 +16,9 @@
   });
 
   async function register() {
-    if (!username.trim() || !password.trim()) {
-      message = t('fillAllFields');
-      return;
-    }
-    if (password.length < 6) {
-      message = t('pwTooShort');
-      return;
-    }
+    if (!username.trim() || !password.trim()) { message = t('fillAllFields'); return; }
+    if (username.trim().length < 3) { message = 'Benutzername muss mindestens 3 Zeichen lang sein.'; return; }
+    if (password.length < 6) { message = t('pwTooShort'); return; }
 
     const response = await fetch(`${API}/register`, {
       method: 'POST',
@@ -45,68 +40,74 @@
   }
 </script>
 
-<div style="min-height: calc(100vh - 58px); display: flex; align-items: center; justify-content: center; padding: 1.5rem; background: var(--bg)">
-  <div class="surface-card" style="width: 100%; max-width: 380px">
+<div style="min-height:100vh; display:flex; align-items:center; justify-content:center; background:var(--bg); padding:1.5rem">
+  <div style="width:100%; max-width:400px">
 
-    <div style="text-align: center; margin-bottom: 2rem">
-      <div style="font-size: 1.6rem; font-weight: 800; color: var(--primary); letter-spacing: -0.5px">Card Clash</div>
-      <div style="font-size: 0.82rem; color: var(--text-muted); margin-top: 4px">Multiplayer Kartenspiel</div>
+    <div style="text-align:center; margin-bottom:2rem">
+      <h1 style="font-size:1.5rem; font-weight:700; color:var(--text); margin:0 0 0.25rem">Card Clash</h1>
+      <p style="font-size:0.9rem; color:var(--text-muted); margin:0">{t('registerTitle')}</p>
     </div>
 
-    <h2 style="font-size: 1.1rem; font-weight: 700; margin: 0 0 0.25rem; color: var(--text)">{t('registerTitle')}</h2>
-    <p style="font-size: 0.85rem; color: var(--text-muted); margin: 0 0 1.25rem">
-      {t('hasAccount')}
-      <a href="/login" style="color: var(--primary); font-weight: 500; text-decoration: none">{t('loginLink')}</a>
-    </p>
+    <div style="background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:2rem; box-shadow:var(--shadow)">
 
-    {#if success}
-      <div style="font-size: 0.85rem; padding: 0.6rem 0.75rem; border-radius: 8px; background: #f0fdf4; color: var(--success); border: 1px solid #bbf7d0; margin-bottom: 1rem">
-        {t('accountCreated')}
-      </div>
-    {/if}
-
-    <div style="display: flex; flex-direction: column; gap: 0.875rem">
-      <div>
-        <label style="display: block; font-size: 0.85rem; font-weight: 500; color: var(--text); margin-bottom: 5px">{t('username')}</label>
-        <input
-          bind:value={username}
-          type="text"
-          placeholder={lang.current === 'de' ? 'Wähle einen Benutzernamen' : 'Choose a username'}
-        />
-      </div>
-
-      <div>
-        <label style="display: block; font-size: 0.85rem; font-weight: 500; color: var(--text); margin-bottom: 5px">{t('password')}</label>
-        <div style="position: relative">
-          <input
-            bind:value={password}
-            type={showPassword ? 'text' : 'password'}
-            placeholder={lang.current === 'de' ? 'Mindestens 6 Zeichen' : 'At least 6 characters'}
-            style="padding-right: 5.5rem"
-            onkeydown={e => e.key === 'Enter' && register()}
-          />
-          <button
-            type="button"
-            onclick={() => showPassword = !showPassword}
-            style="position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%); font-size: 0.75rem; color: var(--text-muted); background: none; border: none; cursor: pointer; padding: 0"
-          >
-            {showPassword ? t('hide') : t('show')}
-          </button>
-        </div>
-        <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px">
-          {lang.current === 'de' ? 'Mind. 6 Zeichen' : 'Min. 6 characters'}
-        </div>
-      </div>
-
-      {#if message}
-        <div style="font-size: 0.85rem; padding: 0.5rem 0.75rem; border-radius: 8px; background: #fef2f2; color: var(--danger); border: 1px solid #fecaca">
-          {message}
+      {#if success}
+        <div style="font-size:0.9rem; padding:0.75rem; border-radius:8px; background:#f0fdf4; color:var(--success); border:1px solid #bbf7d0; margin-bottom:1rem; text-align:center">
+          {t('accountCreated')}
         </div>
       {/if}
 
-      <button onclick={register} class="btn-primary" style="width: 100%; justify-content: center; margin-top: 0.25rem">
-        {t('registerBtn')}
-      </button>
+      <div style="display:flex; flex-direction:column; gap:1rem">
+
+        <div>
+          <label style="display:block; font-size:0.85rem; font-weight:500; color:var(--text); margin-bottom:5px">{t('username')}</label>
+          <input
+            bind:value={username}
+            type="text"
+            placeholder={lang.current === 'de' ? 'Mindestens 3 Zeichen' : 'At least 3 characters'}
+            style="width:100%; padding:0.6rem 0.75rem; border:1px solid var(--border); border-radius:8px; font-size:0.9rem; outline:none; background:var(--surface)"
+            onfocus={e => e.currentTarget.style.borderColor = 'var(--primary)'}
+            onblur={e => e.currentTarget.style.borderColor = 'var(--border)'}
+          />
+        </div>
+
+        <div>
+          <label style="display:block; font-size:0.85rem; font-weight:500; color:var(--text); margin-bottom:5px">{t('password')}</label>
+          <div style="position:relative">
+            <input
+              bind:value={password}
+              type={showPassword ? 'text' : 'password'}
+              placeholder={lang.current === 'de' ? 'Mindestens 6 Zeichen' : 'At least 6 characters'}
+              onkeydown={e => e.key === 'Enter' && register()}
+              style="width:100%; padding:0.6rem 0.75rem; padding-right:5rem; border:1px solid var(--border); border-radius:8px; font-size:0.9rem; outline:none; background:var(--surface)"
+              onfocus={e => e.currentTarget.style.borderColor = 'var(--primary)'}
+              onblur={e => e.currentTarget.style.borderColor = 'var(--border)'}
+            />
+            <button
+              type="button"
+              onclick={() => showPassword = !showPassword}
+              style="position:absolute; right:0.75rem; top:50%; transform:translateY(-50%); background:none; border:none; cursor:pointer; font-size:0.78rem; color:var(--text-muted); padding:0"
+            >
+              {showPassword ? t('hide') : t('show')}
+            </button>
+          </div>
+        </div>
+
+        {#if message}
+          <div style="font-size:0.85rem; padding:0.5rem 0.75rem; border-radius:8px; background:#fef2f2; color:var(--danger); border:1px solid #fecaca">
+            {message}
+          </div>
+        {/if}
+
+        <button onclick={register} class="btn-primary" style="width:100%; justify-content:center; padding:0.65rem">
+          {t('registerBtn')}
+        </button>
+
+        <p style="text-align:center; font-size:0.85rem; color:var(--text-muted); margin:0">
+          {t('hasAccount')}
+          <a href="/login" style="color:var(--primary); font-weight:500">{t('loginLink')}</a>
+        </p>
+
+      </div>
     </div>
 
   </div>

@@ -164,6 +164,14 @@ io.on('connection', (socket) => {
     broadcastGameState(roomId);
   });
 
+  socket.on('pass-turn', ({ roomId }) => {
+    const game = games[roomId];
+    if (!game) return;
+    const result = applyPassTurn(game, socket.data.username);
+    if (!result.ok) return socket.emit('error', result.error);
+    broadcastGameState(roomId);
+  });
+
   socket.on('leave-game', async ({ roomId, username }) => {
     const game = games[roomId];
     if (game) {

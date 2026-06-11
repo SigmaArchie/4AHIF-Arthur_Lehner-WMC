@@ -6,6 +6,7 @@
   import { connectSocket, getSocket } from '$lib/socket.svelte.js';
   import { t } from '$lib/i18n.svelte.js';
   import reverseImg from '$lib/assets/reverse.jpg';
+  import skipImg from '$lib/assets/skip.jpg';
 
   let gameState = $state(null);
   let roomId = $state(null);
@@ -330,6 +331,10 @@
                 <span class="card-corner-top">↺</span>
                 <img src={reverseImg} alt="↺" style="width:42px; height:42px; border-radius:50%; object-fit:contain; background:rgba(255,255,255,0.22); border:2px solid rgba(255,255,255,0.45); padding:5px; filter:brightness(0) invert(1)" />
                 <span class="card-corner-bottom">↺</span>
+              {:else if gameState.topCard.value === 'skip'}
+                <span class="card-corner-top">⊘</span>
+                <img src={skipImg} alt="⊘" style="width:42px; height:42px; border-radius:50%; object-fit:contain; background:rgba(255,255,255,0.22); border:2px solid rgba(255,255,255,0.45); padding:5px; filter:brightness(0) invert(1)" />
+                <span class="card-corner-bottom">⊘</span>
               {:else}
                 <span class="card-corner-top">{displayVal(gameState.topCard.value)}</span>
                 <span class="card-center">{displayVal(gameState.topCard.value)}</span>
@@ -382,6 +387,10 @@
                 <span class="card-corner-top">↺</span>
                 <img src={reverseImg} alt="↺" style="width:42px; height:42px; border-radius:50%; object-fit:contain; background:rgba(255,255,255,0.22); border:2px solid rgba(255,255,255,0.45); padding:5px; filter:brightness(0) invert(1); pointer-events:none" />
                 <span class="card-corner-bottom">↺</span>
+              {:else if card.value === 'skip'}
+                <span class="card-corner-top">⊘</span>
+                <img src={skipImg} alt="⊘" style="width:42px; height:42px; border-radius:50%; object-fit:contain; background:rgba(255,255,255,0.22); border:2px solid rgba(255,255,255,0.45); padding:5px; filter:brightness(0) invert(1); pointer-events:none" />
+                <span class="card-corner-bottom">⊘</span>
               {:else}
                 <span class="card-corner-top">{displayVal(card.value)}</span>
                 <span class="card-center">{displayVal(card.value)}</span>
