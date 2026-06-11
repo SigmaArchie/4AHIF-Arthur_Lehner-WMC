@@ -70,7 +70,11 @@
   }
 
   function drawCard() {
-    getSocket()?.emit('draw-card', { roomId });
+    if (gameState?.drawnCard) {
+      getSocket()?.emit('pass-turn', { roomId });
+    } else {
+      getSocket()?.emit('draw-card', { roomId });
+    }
   }
 
   function leaveGame() {
@@ -348,6 +352,8 @@
               <div class="game-card card-back" style="position:absolute; top:0; left:0; {isMyTurn ? '' : 'opacity:0.6'}">
                 {#if gameState.pendingDraw > 0}
                   <span style="font-size:1.1rem; font-weight:900; color:white">+{gameState.pendingDraw}</span>
+                {:else if isMyTurn && gameState.drawnCard}
+                  <span style="font-size:0.75rem; font-weight:700; color:white; text-align:center; line-height:1.2">{t('passTurn')}</span>
                 {:else}
                   CC
                 {/if}

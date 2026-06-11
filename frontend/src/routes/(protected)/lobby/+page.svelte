@@ -38,7 +38,8 @@
   }
 
   async function createRoom() {
-    if (session.currentRoomId || !roomName.trim()) return;
+    if (session.currentRoomId) { message = t('finishGameFirst'); return; }
+    if (!roomName.trim()) { message = t('roomNameEmpty'); return; }
     try {
       const res = await fetch(`${API}/rooms`, {
         method: 'POST',
@@ -57,7 +58,7 @@
   }
 
   function joinRoom(room) {
-    if (session.currentRoomId) return;
+    if (session.currentRoomId) { message = t('finishGameFirst'); return; }
     if (!auth.username) { message = t('mustLogin'); return; }
     const socket = connectSocket();
     socket.emit('join-room', { roomId: room.id, username: auth.username });

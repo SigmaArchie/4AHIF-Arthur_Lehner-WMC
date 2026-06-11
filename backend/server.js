@@ -6,7 +6,7 @@ const { createServer } = require('http');
 const { Server } = require('socket.io');
 
 const initDatabase = require('./db');
-const { createGame, applyPlayCard, applyDrawCard, getStateForPlayer } = require('./game');
+const { createGame, applyPlayCard, applyDrawCard, applyPassTurn, getStateForPlayer } = require('./game');
 
 const app = express();
 const httpServer = createServer(app);
@@ -152,6 +152,14 @@ io.on('connection', (socket) => {
     const game = games[roomId];
     if (!game) return;
     const result = applyDrawCard(game, socket.data.username);
+    if (!result.ok) return socket.emit('error', result.error);
+    broadcastGameState(roomId);
+  });
+
+  socket.on('pass-turn', ({ roomId }) => {
+    const game = games[roomId];
+    if (!game) return;
+    const result = applyPassTurn(game, socket.data.username);
     if (!result.ok) return socket.emit('error', result.error);
     broadcastGameState(roomId);
   });

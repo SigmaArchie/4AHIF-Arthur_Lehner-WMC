@@ -62,6 +62,8 @@ function createGame(players) {
     currentColor: startCard.color,
     status: 'playing',
     pendingDraw: 0,        // accumulated +2 / +4
+    pendingDrawSource: null, // '+2' or 'wild+4' — prevents cross-stacking
+    drawnCard: false,      // player drew this turn, may now play or pass
     winner: null
   };
 }
@@ -71,9 +73,10 @@ function topCard(gameState) {
 }
 
 function canPlayCard(card, gameState) {
-  // stacking rule: when +2/+4 is pending, only another +2 or +4 can be played
+  // stacking: +2 only stacks on +2, wild+4 only stacks on wild+4
   if (gameState.pendingDraw > 0) {
-    return card.value === '+2' || card.value === 'wild+4';
+    if (gameState.pendingDrawSource === '+2') return card.value === '+2';
+    return card.value === 'wild+4';
   }
 
   const top = topCard(gameState);
@@ -106,6 +109,7 @@ function applyPlayCard(gameState, username, cardIndex, chosenColor) {
   // remove card from hand
   hand.splice(cardIndex, 1);
   gameState.discardPile.push(card);
+  gameState.drawnCard = false;
 
   // check win
   if (hand.length === 0) {
@@ -135,6 +139,7 @@ function applyPlayCard(gameState, username, cardIndex, chosenColor) {
     case '+2':
       gameState.currentColor = card.color;
       gameState.pendingDraw += 2;
+      gameState.pendingDrawSource = '+2';
       gameState.currentPlayerIndex = nextIndex(gameState);
       break;
 
@@ -146,6 +151,7 @@ function applyPlayCard(gameState, username, cardIndex, chosenColor) {
     case 'wild+4':
       gameState.currentColor = chosenColor || 'red';
       gameState.pendingDraw += 4;
+      gameState.pendingDrawSource = 'wild+4';
       gameState.currentPlayerIndex = nextIndex(gameState);
       break;
 
@@ -160,9 +166,12 @@ function applyPlayCard(gameState, username, cardIndex, chosenColor) {
 function applyDrawCard(gameState, username) {
   if (gameState.players[gameState.currentPlayerIndex] !== username)
     return { ok: false, error: 'Not your turn' };
+  if (gameState.drawnCard)
+    return { ok: false, error: 'Already drew a card this turn' };
 
   const count = gameState.pendingDraw > 0 ? gameState.pendingDraw : 1;
   gameState.pendingDraw = 0;
+  gameState.pendingDrawSource = null;
 
   // reshuffle discard pile into deck if needed
   for (let i = 0; i < count; i++) {
@@ -176,13 +185,20 @@ function applyDrawCard(gameState, username) {
     }
   }
 
-  // move to next player only if no pending draw was resolved
-  if (count === 1) {
-    gameState.currentPlayerIndex = nextIndex(gameState);
-  } else {
-    gameState.currentPlayerIndex = nextIndex(gameState);
-  }
+  // don't advance turn — player can play a card or pass
+  gameState.drawnCard = true;
 
+  return { ok: true };
+}
+
+function applyPassTurn(gameState, username) {
+  if (gameState.players[gameState.currentPlayerIndex] !== username)
+    return { ok: false, error: 'Not your turn' };
+  if (!gameState.drawnCard)
+    return { ok: false, error: 'Draw a card first' };
+
+  gameState.drawnCard = false;
+  gameState.currentPlayerIndex = nextIndex(gameState);
   return { ok: true };
 }
 
@@ -204,9 +220,10 @@ function getStateForPlayer(gameState, username) {
     direction: gameState.direction,
     deckCount: gameState.deck.length,
     pendingDraw: gameState.pendingDraw,
+    drawnCard: gameState.drawnCard,
     status: gameState.status,
     winner: gameState.winner
   };
 }
 
-module.exports = { createGame, canPlayCard, applyPlayCard, applyDrawCard, getStateForPlayer };
+module.exports = { createGame, canPlayCard, applyPlayCard, applyDrawCard, applyPassTurn, getStateForPlayer };

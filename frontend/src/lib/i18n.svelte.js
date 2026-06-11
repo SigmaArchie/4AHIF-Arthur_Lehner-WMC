@@ -54,6 +54,8 @@ const translations = {
     show: 'Anzeigen', hide: 'Verstecken',
     deleteRoom: 'Raum löschen',
     finishGameFirst: 'Beende zuerst dein laufendes Spiel.',
+    passTurn: 'Passen',
+    roomNameEmpty: 'Bitte einen Raumnamen eingeben.',
   },
   en: {
     lobby: 'Lobby', profile: 'Profile', logout: 'Logout',
@@ -103,6 +105,8 @@ const translations = {
     show: 'Show', hide: 'Hide',
     deleteRoom: 'Delete room',
     finishGameFirst: 'Finish your current game first.',
+    passTurn: 'Pass',
+    roomNameEmpty: 'Please enter a room name.',
   }
 };
 

@@ -20,6 +20,10 @@
       message = t('fillAllFields');
       return;
     }
+    if (password.length < 6) {
+      message = t('pwTooShort');
+      return;
+    }
 
     const response = await fetch(`${API}/register`, {
       method: 'POST',
@@ -41,72 +45,69 @@
   }
 </script>
 
-<div class="min-h-screen flex">
-  <!-- Left: Branding -->
-  <div class="hidden md:flex w-2/5 bg-purple-600 flex-col items-center justify-center gap-5 p-12 text-white">
-    <div class="text-7xl">🃏</div>
-    <h1 class="text-4xl font-bold tracking-tight">Card Clash</h1>
-    <p class="text-purple-200 text-center text-sm max-w-xs leading-relaxed">
-      Erstelle deinen Account und spiel los – kostenlos und ohne Installation.
+<div style="min-height: calc(100vh - 58px); display: flex; align-items: center; justify-content: center; padding: 1.5rem; background: var(--bg)">
+  <div class="surface-card" style="width: 100%; max-width: 380px">
+
+    <div style="text-align: center; margin-bottom: 2rem">
+      <div style="font-size: 1.6rem; font-weight: 800; color: var(--primary); letter-spacing: -0.5px">Card Clash</div>
+      <div style="font-size: 0.82rem; color: var(--text-muted); margin-top: 4px">Multiplayer Kartenspiel</div>
+    </div>
+
+    <h2 style="font-size: 1.1rem; font-weight: 700; margin: 0 0 0.25rem; color: var(--text)">{t('registerTitle')}</h2>
+    <p style="font-size: 0.85rem; color: var(--text-muted); margin: 0 0 1.25rem">
+      {t('hasAccount')}
+      <a href="/login" style="color: var(--primary); font-weight: 500; text-decoration: none">{t('loginLink')}</a>
     </p>
-  </div>
 
-  <!-- Right: Form -->
-  <div class="flex-1 flex items-center justify-center bg-white p-10">
-    <div class="w-full max-w-sm">
-      <h2 class="text-2xl font-bold text-gray-900 mb-1">{t('registerTitle')}</h2>
-      <p class="text-sm text-gray-500 mb-8">
-        {t('hasAccount')}
-        <a href="/login" class="text-purple-600 hover:underline font-medium">{t('loginLink')}</a>
-      </p>
+    {#if success}
+      <div style="font-size: 0.85rem; padding: 0.6rem 0.75rem; border-radius: 8px; background: #f0fdf4; color: var(--success); border: 1px solid #bbf7d0; margin-bottom: 1rem">
+        {t('accountCreated')}
+      </div>
+    {/if}
 
-      {#if success}
-        <div class="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm mb-4">
-          {t('accountCreated')}
+    <div style="display: flex; flex-direction: column; gap: 0.875rem">
+      <div>
+        <label style="display: block; font-size: 0.85rem; font-weight: 500; color: var(--text); margin-bottom: 5px">{t('username')}</label>
+        <input
+          bind:value={username}
+          type="text"
+          placeholder={lang.current === 'de' ? 'Wähle einen Benutzernamen' : 'Choose a username'}
+        />
+      </div>
+
+      <div>
+        <label style="display: block; font-size: 0.85rem; font-weight: 500; color: var(--text); margin-bottom: 5px">{t('password')}</label>
+        <div style="position: relative">
+          <input
+            bind:value={password}
+            type={showPassword ? 'text' : 'password'}
+            placeholder={lang.current === 'de' ? 'Mindestens 6 Zeichen' : 'At least 6 characters'}
+            style="padding-right: 5.5rem"
+            onkeydown={e => e.key === 'Enter' && register()}
+          />
+          <button
+            type="button"
+            onclick={() => showPassword = !showPassword}
+            style="position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%); font-size: 0.75rem; color: var(--text-muted); background: none; border: none; cursor: pointer; padding: 0"
+          >
+            {showPassword ? t('hide') : t('show')}
+          </button>
+        </div>
+        <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px">
+          {lang.current === 'de' ? 'Mind. 6 Zeichen' : 'Min. 6 characters'}
+        </div>
+      </div>
+
+      {#if message}
+        <div style="font-size: 0.85rem; padding: 0.5rem 0.75rem; border-radius: 8px; background: #fef2f2; color: var(--danger); border: 1px solid #fecaca">
+          {message}
         </div>
       {/if}
 
-      <div class="flex flex-col gap-4">
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">{t('username')}</label>
-          <input
-            bind:value={username}
-            type="text"
-            placeholder={lang.current === 'de' ? 'Wähle einen Benutzernamen' : 'Choose a username'}
-            class="border border-gray-300 p-3 rounded-lg w-full text-sm focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent"
-          />
-        </div>
-
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">{t('password')}</label>
-          <div class="relative">
-            <input
-              bind:value={password}
-              type={showPassword ? 'text' : 'password'}
-              placeholder={lang.current === 'de' ? 'Wähle ein sicheres Passwort' : 'Choose a secure password'}
-              class="border border-gray-300 p-3 rounded-lg w-full text-sm pr-24 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent"
-            />
-            <button
-              type="button"
-              onclick={() => showPassword = !showPassword}
-              class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 hover:text-gray-600"
-            >
-              {showPassword ? t('hide') : t('show')}
-            </button>
-          </div>
-        </div>
-
-        {#if message}
-          <p class="text-red-500 text-sm bg-red-50 border border-red-200 rounded-lg px-3 py-2">{message}</p>
-        {/if}
-
-        <button
-          onclick={register}
-          class="bg-purple-600 hover:bg-purple-700 text-white p-3 rounded-lg font-semibold text-sm transition-colors mt-1"
-        >
-          {t('registerBtn')}
-        </button>
-      </div>
+      <button onclick={register} class="btn-primary" style="width: 100%; justify-content: center; margin-top: 0.25rem">
+        {t('registerBtn')}
+      </button>
     </div>
+
   </div>
 </div>
